@@ -19,9 +19,11 @@ User data (first name, last name, email) is updated in WordPress's database from
 
 This plugin has been tested as a mu-plugin on WordPress 4.7 multisite running Apache and PHP 7.0 (via FPM). It has not been tested and may not be compatible with other configurations (yet).
 
+SimpleShib is actively developed on GitHub. Please submit any bug reports, pull requests, or other issues on GitHub: https://github.com/srguglielmo/SimpleShib
+
 == Installation ==
 
-This plugin will not work if you do not have a Shibboleth IdP and SP already configured. The `shibd` daemon must be installed, configured, and running on the same server as the httpd. Additionally, Apache's mod_shib module must be installed and enabled. These steps vary based on your operating system and environment. Installation and configuration of the IdP and SP is beyond the scope of this plugin's documentation. Reference the [official Shibboleth documentation](https://wiki.shibboleth.net).
+This plugin will not work if you do not have a Shibboleth IdP and SP already configured. The `shibd` daemon must be installed, configured, and running on the same server as the httpd. Additionally, Apache's `mod_shib` module must be installed and enabled. These steps vary based on your operating system and environment. Installation and configuration of the IdP and SP is beyond the scope of this plugin's documentation. Reference the [official Shibboleth documentation](https://wiki.shibboleth.net).
 
 1. Use a text editor to change the settings at the top of the `simpleshib.php` file. Each setting is described in the file.
 2. Upload the `simpleshib.php` file to the `/wp-content/mu-plugins/` directory.
@@ -34,7 +36,7 @@ This plugin will not work if you do not have a Shibboleth IdP and SP already con
 
 == Frequently Asked Questions ==
 
-= Requests to /Shibboleth.sso/ are showing a WordPress "Page Not Found" error! =
+= Requests to `/Shibboleth.sso/` are showing a WordPress "Page Not Found" error! =
 
 You must configure Apache to handle requests for `/Shibboleth.sso/` instead of letting WordPress handle it. Apache will past the request to mod_shib and shibd. To do this, add the following configuration to your VirtualHost block in Apache:
 
@@ -42,7 +44,7 @@ RewriteEngine on
 RewriteCond %{REQUEST_URI} ^/Shibboleth.sso($|/)
 RewriteRule . - [END]
 
-= I'm having domain name redirect issues. =
+= The domain names are not correct after a redirect! =
 
 Add the following to Apache's global config:
 
@@ -51,4 +53,4 @@ UseCanonicalName On
 == Changelog ==
 
 = 1.0 =
-* Inital release.
+* Initial release.

@@ -31,10 +31,10 @@ This plugin will not work if you do not have a Shibboleth IdP and SP already con
 2. Upload the `simpleshib.php` file to the `/wp-content/mu-plugins/` directory.
 3. Add the following to Apache's VirtualHost block and restart Apache:
 
-> <Location />
->     AuthType shibboleth
->     Require shibboleth
-> </Location>
+	<Location />
+		AuthType shibboleth
+		Require shibboleth
+	</Location>
 
 == Frequently Asked Questions ==
 
@@ -56,15 +56,15 @@ My attempts to use another Shibboleth WordPress plugin failed for various reason
 
 You must configure Apache to handle requests for `/Shibboleth.sso/` instead of letting WordPress handle it. Apache will pass the request to `mod_shib`/`shibd`. To do this, add the following configuration to your VirtualHost block in Apache and restart the httpd:
 
-> RewriteEngine on
-> RewriteCond %{REQUEST_URI} ^/Shibboleth.sso($|/)
-> RewriteRule . - [END]
+	RewriteEngine on
+	RewriteCond %{REQUEST_URI} ^/Shibboleth.sso($|/)
+	RewriteRule . - [END]
 
 = The doman name is not correct after a redirect =
 
 Add the following to Apache's global config:
 
-> UseCanonicalName On
+	UseCanonicalName On
 
 = Can I automatically set user roles based on IdP data?  =
 

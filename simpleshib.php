@@ -3,7 +3,7 @@
 Plugin Name: SimpleShib
 Plugin URI: https://github.com/srguglielmo/SimpleShib
 Description: Authenticate users through Shibboleth Single Sign-On.
-Version: 1.0
+Version: 1.0.1
 Author: Stephen R Guglielmo
 Author URI: https://guglielmo.us/
 License: MIT
@@ -16,12 +16,12 @@ new SimpleShib();
 
 class SimpleShib {
 
-	//////////////
-	// SETTINGS //
-	//////////////
+	//
+	// SETTINGS
+	//
 
 	// Set to true to print some debugging messages to the PHP error log.
-	private $Debug = true;
+	private $Debug = false;
 
 	// Set to true to disable all login functionality.
 	private $LoginsDisabled = false;
@@ -33,18 +33,19 @@ class SimpleShib {
 
 	// Logout URL. Handled by the SP on your server. This should be "/Shibboleth.sso/Logout"
 	// and can have an optional "?return=$URL" to redirect to a custom logout page.
-	private $SessionLogoutURL = '/Shibboleth.sso/Logout?return=/blog/2016/11/logging-out/';
+	// Eg: /Shibboleth.sso/Logout?return=/blog/2016/11/close-your-browser/
+	private $SessionLogoutURL = '/Shibboleth.sso/Logout';
 
 	// A URL for the 'Change Password' link for users.
 	// Set to an empty string to disable this link.
-	private $PassChangeURL = 'https://accounts.example.edu/';
+	private $PassChangeURL = 'http://example.com/accounts';
 
 	// "Lost Password" URL. Required.
-	private $LostPassURL = 'https://accounts.example.edu/';
+	private $LostPassURL = 'http://example.com/accounts';
 
-	//////////////////
-	// END SETTINGS //
-	//////////////////
+	//
+	// END SETTINGS
+	//
 
 	public function __construct() {
 		// Remove all existing wordpress authentication methods.
@@ -118,7 +119,7 @@ class SimpleShib {
 
 	// Check if a Shibboleth session is active. This means the user has logged into the IdP successfully.
 	// This checks for the shibboleth HTTP headers. These headers cannot be forged because they actually
-	// are generated locally in shibd via Apache's shib module. If the user spoofs the "mail" header,
+	// are generated locally in shibd via Apache's mod_shib. If the user spoofs the "mail" header,
 	// for example, it actually shows up as HTTP_MAIL instead of "mail".
 	// Returns true or false.
 	private function shib_session_active() {
@@ -201,7 +202,7 @@ class SimpleShib {
 			do_action('wp_login_failed', $Shib['Username']); // Fire any login-failed hooks.
 
 			// TODO: Setting for support ticket URL.
-			return new WP_Error('shib', '<strong>ERROR:</strong> credentials are correct, but an error occurred ' . $ErrorMsg . ' the local account. Please <a href="https://help.example.edu">open a support ticket</a> with this error.');
+			return new WP_Error('shib', '<strong>ERROR:</strong> credentials are correct, but an error occurred ' . $ErrorMsg . ' the local account. Please open a support ticket with this error.');
 		} else {
 			// Created the user successfully.
 			return new WP_User($NewUser);
@@ -228,9 +229,9 @@ class SimpleShib {
 		}
 	}
 
-	////////////////////////////////////////////////////////////////////
-	// The functions below here are related to the user profile page. //
-	////////////////////////////////////////////////////////////////////
+	//
+	// The functions below here are related to the user profile page.
+	//
 
 	// Various hooks for the admin/user profile screen. Hooked on 'admin_init'.
 	public function add_admin_hooks() {

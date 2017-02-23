@@ -44,6 +44,10 @@ From [Wikipedia](https://en.wikipedia.org/wiki/Shibboleth_(Internet2)):
 
 > *"Shibboleth is a single sign-on (log-in) system for computer networks and the Internet. It allows people to sign in using just one identity to various systems run by federations of different organizations or institutions. The federations are often universities or public service organizations."*
 
+= Can I test this without an IdP? =
+
+Yes! Check out [TestShib.org](https://www.testshib.org/). Note, you still need the SP configured on the server with the httpd/WordPress.
+
 = Why doesn't SimpleShib have feature x? =
 
 I prefer the [KISS principle](https://en.wikipedia.org/wiki/KISS_principle). The less moving parts, the less of a chance something will break. If something does break, it's easier to fix.

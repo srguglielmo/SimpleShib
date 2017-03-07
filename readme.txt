@@ -2,7 +2,7 @@
 Contributors: srg-1
 Tags: shibboleth, authentication, sso, login
 Requires at least: 4.6
-Tested up to: 4.7.2
+Tested up to: 4.7.3
 Stable tag: trunk
 License: MIT
 License URI: https://choosealicense.com/licenses/mit/
@@ -54,7 +54,7 @@ I prefer the [KISS principle](https://en.wikipedia.org/wiki/KISS_principle). The
 
 = A shibboleth plugin already exists; why write another? =
 
-My attempts to use another Shibboleth WordPress plugin failed for various reasons. I ended up modifying the plugin heavily. I finally got to the point where I just wrote my own.
+My attempts to use the other Shibboleth plugin failed for various technical reasons. It seems to be unmaintained upstream. I ended up modifying the plugin heavily. I finally got to the point where I just wrote my own.
 
 = HTTP requests to Shibboleth.sso are showing WordPress's "Page Not Found" error =
 

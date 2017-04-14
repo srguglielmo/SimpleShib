@@ -11,15 +11,17 @@ SimpleShib is a WordPress plugin to authenticate users with a Shibboleth Single 
 
 == Description ==
 
-*SimpleShib* is a WordPress plugin to authenticate users with a Shibboleth Single Sign-On infrastructure. The plugin is intended to be simple with easy-to-read code.
+**SimpleShib** is a WordPress plugin to authenticate users with a Shibboleth Single Sign-On infrastructure. The plugin is intended to be simple with easy-to-read code.
 
-**Login Process:** When a login request is received from a user, the Shibboleth session is validated. If the session does not exist, user is redirected to the IdP login page. Once authenticated at the IdP, the user is redirected back to WordPress and logged into their WordPress account. If they do not have an existing account, one is created for them automatically.
+When a login request is received from a user, the Shibboleth session is validated. If the session does not exist, user is redirected to the IdP login page. Once authenticated at the IdP, the user is redirected back to WordPress and logged into their WordPress account. If they do not have an existing account, one is created for them automatically.
 
 User data (login, name, and email) is updated in WordPress from the IdP data upon every login. Additionally, the user is restricted from editing those fields on their profile page.
 
-This plugin has been tested as a mu-plugin on WordPress 4.7 multisite running Apache and PHP 7.0 (via FPM). It has not been tested and may not be compatible with other configurations (yet).
+This plugin has been tested as a mu-plugin on WordPress 4.7 multisite running Apache and PHP 7.0 (via FPM). It has not been tested and may not be compatible with other configurations (yet). Please report if you have tested this on a different setup.
 
-*SimpleShib* is actively developed on GitHub. Please submit any issues on GitHub: [https://github.com/srguglielmo/SimpleShib](https://github.com/srguglielmo/SimpleShib)
+**SimpleShib** is actively developed on GitHub. Please submit bug reports and contributions on [the GitHub project page](https://github.com/srguglielmo/SimpleShib).
+
+For general support and questions, please use the [WordPress support forum](https://wordpress.org/support/plugin/simpleshib/).
 
 This plugin is not affiliated with the Shibboleth or Internet2 organizations.
 
@@ -72,11 +74,11 @@ Add the following to Apache's global config:
 
 = Can I automatically set user roles based on IdP data?  =
 
-No. *SimpleShib* handles authentication, not authorization. Authorization is managed within WordPress by network admins or site admins.
+No. **SimpleShib** handles authentication, not authorization. Authorization is managed within WordPress by network admins or site admins.
 
 = What's this MIT license? =
 
-*SimpleShib* is released under the [MIT license](https://choosealicense.com/licenses/mit/). The MIT license is short, simple, and very permissive. Basically, you can do whatever you want, provided the original copyright and license notice are included in any/all copies of the software. You may modify, distribute, sell, incorporate into proprietary software, use privately, and use commerically.
+**SimpleShib** is released under the [MIT license](https://choosealicense.com/licenses/mit/). The MIT license is short, simple, and very permissive. Basically, you can do whatever you want, provided the original copyright and license notice are included in any/all copies of the software. You may modify, distribute, sell, incorporate into proprietary software, use privately, and use commerically.
 
 There is no warranty and the author or any contributors are not liable if something goes wrong.
 

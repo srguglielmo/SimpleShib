@@ -30,13 +30,13 @@ This plugin is not affiliated with the Shibboleth or Internet2 organizations.
 This plugin will not work if you do not have a Shibboleth IdP and SP already configured. The `shibd` daemon must be installed, configured, and running on the same server as the httpd/WordPress. Additionally, Apache's `mod_shib` module must be installed and enabled. These steps vary based on your operating system and environment. Installation and configuration of the IdP and SP is beyond the scope of this plugin's documentation. Reference the [official Shibboleth documentation](https://wiki.shibboleth.net).
 
 1. Use a text editor to change the settings at the top of the `simpleshib.php` file. Each setting is described in the file.
-2. Upload the `simpleshib.php` file to the `/wp-content/mu-plugins/` directory.
+2. Upload the `simpleshib.php` file to the `wp-content/mu-plugins/` directory (you may need to create this directory if it does not exist).
 3. Add the following to Apache's VirtualHost block and restart Apache:
 
-	<Location />
+	`<Location />
 		AuthType shibboleth
 		Require shibboleth
-	</Location>
+	</Location>`
 
 == Frequently Asked Questions ==
 
@@ -62,15 +62,15 @@ My attempts to use the other Shibboleth plugin failed for various technical reas
 
 You must configure Apache to handle requests for `/Shibboleth.sso/` instead of letting WordPress handle it. Apache will pass the request to `mod_shib`/`shibd`. To do this, add the following configuration to your VirtualHost block in Apache and restart the httpd:
 
-	RewriteEngine on
+	`RewriteEngine on
 	RewriteCond %{REQUEST_URI} ^/Shibboleth.sso($|/)
-	RewriteRule . - [END]
+	RewriteRule . - [END]`
 
 = The doman name is not correct after a redirect =
 
 Add the following to Apache's global config:
 
-	UseCanonicalName On
+	`UseCanonicalName On`
 
 = Can I automatically set user roles based on IdP data?  =
 

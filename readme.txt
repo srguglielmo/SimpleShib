@@ -3,7 +3,6 @@ Contributors: srg-1
 Tags: shibboleth, authentication, sso, login
 Requires at least: 4.6
 Tested up to: 4.7.3
-Stable tag: trunk
 License: MIT
 License URI: https://choosealicense.com/licenses/mit/
 

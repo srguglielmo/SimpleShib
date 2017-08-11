@@ -140,11 +140,8 @@ class SimpleShib {
 	// This takes in mind the site the user is logging in on
 	// as well as the redirect_to GET value.
 	private function get_initiator_url($RedirectTo = null) {
-
-		// TODO: Is this necessary?
-		switch_to_blog(get_current_blog_id()); // Switch to the site currently being viewed.
-		$ReturnTo = site_url('wp-login.php'); // Get the login page URL.
-		restore_current_blog(); // Switch back.
+		 // Get the login page URL.
+		$ReturnTo = get_site_url( get_current_blog_id(), 'wp-login.php', 'login' );
 
 		if (!empty($RedirectTo)) {
 			// Don't urlencode($RedirectTo) - we do this below.

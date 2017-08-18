@@ -23,7 +23,7 @@ class SimpleShib {
 	// Set to true to print some debugging messages to the PHP error log.
 	private $Debug = false;
 
-	// Set to true to disable all login functionality.
+	// Set to true to disable ALL login functionality, both WordPress native and Shib.
 	private $LoginsDisabled = false;
 
 	// The URL to initiate the session at the IdP. This should be "/Shibboleth.sso/Login".
@@ -40,7 +40,7 @@ class SimpleShib {
 	// Set to an empty string to disable this link.
 	private $PassChangeURL = 'http://example.com/accounts';
 
-	// "Lost Password" URL. Required.
+	// "Lost Password" URL. Required. Can be the same as above.
 	private $LostPassURL = 'http://example.com/accounts';
 
 	//

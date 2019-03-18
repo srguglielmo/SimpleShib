@@ -2,7 +2,7 @@
 Contributors: srg-1
 Tags: shibboleth, authentication, sso, login
 Requires at least: 4.6
-Tested up to: 4.7.3
+Tested up to: 5.0
 License: MIT
 License URI: https://choosealicense.com/licenses/mit/
 
@@ -16,9 +16,9 @@ When a login request is received from a user, the Shibboleth session is validate
 
 User data (login, name, and email) is updated in WordPress from the IdP data upon every login. Additionally, the user is restricted from editing those fields on their profile page.
 
-This plugin has been tested as a mu-plugin on WordPress 4.7 multisite running Apache and PHP 7.0 (via FPM). It has not been tested and may not be compatible with other configurations (yet). Please report if you have tested this on a different setup.
+This plugin has been tested as a mu-plugin on WordPress multisite running Apache and PHP 7 (via FPM). It has not been tested and may not be compatible with other configurations (yet). Please report if you have tested this on a different setup.
 
-**SimpleShib** is actively developed on GitHub. Please submit bug reports and contributions on [the GitHub project page](https://github.com/srguglielmo/SimpleShib).
+**SimpleShib** is developed on GitHub. Please submit bug reports and contributions on [the GitHub project page](https://github.com/srguglielmo/SimpleShib).
 
 For general support and questions, please use the [WordPress support forum](https://wordpress.org/support/plugin/simpleshib/).
 
@@ -84,6 +84,11 @@ There is no warranty and the author or any contributors are not liable if someth
 See the `LICENSE` file for full details.
 
 == Changelog ==
+
+= 1.0.2 =
+* Compatibility with WordPress 5.
+* Improved compliance with WordPress coding standards.
+* Minor documentation updates.
 
 = 1.0.1 =
 * Very minor documentation and code changes.

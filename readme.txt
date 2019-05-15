@@ -11,11 +11,11 @@ SimpleShib is a WordPress plugin to authenticate users with a Shibboleth Single 
 
 **SimpleShib** is a WordPress plugin to authenticate users with a Shibboleth Single Sign-On infrastructure. The plugin is intended to be simple with easy-to-read code.
 
-When a login request is received from a user, the Shibboleth session is validated. If the session does not exist, user is redirected to the IdP login page. Once authenticated at the IdP, the user is redirected back to WordPress and logged into their WordPress account. If they do not have an existing account, one is created for them automatically.
+When a login request is received from a user, the Shibboleth session is validated. If the session does not exist, user is redirected to the IdP login page. Once authenticated at the IdP, the user is redirected back to WordPress and logged into their local WordPress account. If they do not have an existing local account, one can be automatically created for them. Automatic account provisioning can optionally be disabled to restrict access to existing local WordPress users only.
 
-User data (login, name, and email) is updated in WordPress from the IdP data upon every login. Additionally, the user is restricted from editing those fields on their profile page.
+User data (login, name, and email) is updated in WordPress from the IdP data upon every login. Additionally, the user is restricted from manually changing those fields on their profile page.
 
-On WordPress Multisite instances, **SimpleShib** can only be network-activated.
+On multisite instances of WordPress, **SimpleShib** can only be network-activated.
 
 **SimpleShib** is developed on GitHub. Please submit bug reports and contributions on [the GitHub project page](https://github.com/srguglielmo/SimpleShib).
 
@@ -80,6 +80,9 @@ There is no warranty and the author or any contributors are not liable if someth
 See the `LICENSE` file for full details.
 
 == Changelog ==
+
+= 1.1.0 =
+* Add a boolean setting for automatic account provisioning.
 
 = 1.0.3 =
 * Compatibility with WordPress 5.1.

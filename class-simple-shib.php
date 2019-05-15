@@ -28,6 +28,12 @@ class Simple_Shib {
 	// Set to true to disable ALL login functionality, both WordPress native and Shib.
 	private $_logins_disabled = false;
 
+	// When automatic account provisioning is enabled, anyone with valid credentials at
+	// the IdP can login to WordPress. If they do not have a local WordPress account, one
+	// will be created for them. When the setting is disabled, the login process will fail
+	// if the user does not have a matching local WordPress account.
+	private $_auto_account_provision = true;
+
 	// The URL to initiate the session at the IdP. This should be "/Shibboleth.sso/Login".
 	// This is handled by the SP on your server. The user will be redirected here upon login.
 	// This cannot have any GET params due to _get_initiator_url().
@@ -185,6 +191,14 @@ class Simple_Shib {
 
 		// Check to see if they exist locally.
 		$user_obj = get_user_by( 'login', $shib['username'] );
+		if ( false === $user_obj && false === $this->_auto_account_provision ) {
+			do_action( 'wp_login_failed', $shib['username'] ); // Fire any login-failed hooks.
+			$error_obj = new WP_Error(
+				'shib',
+				'<strong>Access Denied.</strong> Your login credentials are correct, but you do not have authorization to access this site.'
+			);
+			return $error_obj;
+		}
 
 		// See https://developer.wordpress.org/reference/functions/wp_insert_user/.
 		$insert_user_data = array(

@@ -33,13 +33,13 @@ This plugin will not work if you do not have a Shibboleth IdP and SP already con
 2. Upload the directory to `wp-content/plugins/` (i.e. `wp-content/plugins/simpleshib/`).
 3. Add the following to Apache's VirtualHost block and restart Apache:
 
-`<Location />
-	AuthType shibboleth
-	Require shibboleth
-</Location>
-RewriteEngine on
-RewriteCond %{REQUEST_URI} ^/Shibboleth.sso($|/)
-RewriteRule . - [END]`
+	`<Location />
+		AuthType shibboleth
+		Require shibboleth
+	</Location>
+	RewriteEngine on
+	RewriteCond %{REQUEST_URI} ^/Shibboleth.sso($|/)
+	RewriteRule . - [END]`
 
 4. Activate the SimpleShib plugin.
 

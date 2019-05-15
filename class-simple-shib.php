@@ -7,7 +7,7 @@
  * @link https://wordpress.org/plugins/simpleshib/
  *
  * @package SimpleShib
- * @since 1.0.2
+ * @since 1.0.3
  */
 
 /**
@@ -15,7 +15,7 @@
  *
  * The Simple_Shib class is comprised of methods to support Single Sign-On via Shibboleth.
  *
- * @since 1.0.2
+ * @since 1.0.3
  */
 class Simple_Shib {
 	//

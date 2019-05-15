@@ -83,6 +83,7 @@ See the `LICENSE` file for full details.
 
 = 1.1.0 =
 * Add a boolean setting for automatic account provisioning.
+* Update example logout URL to return to the IdP's logout page.
 
 = 1.0.3 =
 * Compatibility with WordPress 5.1.

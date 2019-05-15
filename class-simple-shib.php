@@ -41,7 +41,7 @@ class Simple_Shib {
 
 	// Logout URL. Handled by the SP on your server. This should be "/Shibboleth.sso/Logout"
 	// and can have an optional "?return=$URL" to redirect to a custom logout page.
-	// Eg: /Shibboleth.sso/Logout?return=/blog/2016/11/close-your-browser/
+	// Eg: /Shibboleth.sso/Logout?return=https://idp.example.com/idp/profile/Logout
 	private $_session_logout_url = '/Shibboleth.sso/Logout';
 
 	// A URL for the 'Change Password' link for users.

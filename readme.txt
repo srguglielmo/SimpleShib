@@ -11,7 +11,9 @@ SimpleShib is a WordPress plugin to authenticate users with a Shibboleth Single 
 
 **SimpleShib** is a WordPress plugin to authenticate users with a Shibboleth Single Sign-On infrastructure. The plugin is intended to be simple with easy-to-read code.
 
-When a login request is received from a user, the Shibboleth session is validated. If the session does not exist, user is redirected to the IdP login page. Once authenticated at the IdP, the user is redirected back to WordPress and logged into their local WordPress account. If they do not have an existing local account, one can be automatically created for them. Automatic account provisioning can optionally be disabled to restrict access to existing local WordPress users only.
+When a login request is received from a user, the Shibboleth session is validated. If the session does not exist, user is redirected to the IdP login page. Once authenticated at the IdP, the user is redirected back to WordPress and logged into their local WordPress account. If they do not have an existing local account, one can be automatically created for them.
+
+Automatic account provisioning can optionally be disabled to restrict access to existing local WordPress users only.
 
 User data (login, name, and email) is updated in WordPress from the IdP data upon every login. Additionally, the user is restricted from manually changing those fields on their profile page.
 
@@ -31,15 +33,15 @@ This plugin will not work if you do not have a Shibboleth IdP and SP already con
 2. Upload the directory to `wp-content/plugins/` (i.e. `wp-content/plugins/simpleshib/`).
 3. Add the following to Apache's VirtualHost block and restart Apache:
 
-	`<Location />
-		AuthType shibboleth
-		Require shibboleth
-	</Location>
-	RewriteEngine on
-	RewriteCond %{REQUEST_URI} ^/Shibboleth.sso($|/)
-	RewriteRule . - [END]`
+`<Location />
+	AuthType shibboleth
+	Require shibboleth
+</Location>
+RewriteEngine on
+RewriteCond %{REQUEST_URI} ^/Shibboleth.sso($|/)
+RewriteRule . - [END]`
 
-4. Network activate the SimpleShib plugin.
+4. Activate the SimpleShib plugin.
 
 == Frequently Asked Questions ==
 
@@ -88,7 +90,7 @@ See the `LICENSE` file for full details.
 = 1.0.3 =
 * Compatibility with WordPress 5.1.
 * Improved compliance with WordPress coding standards.
-* Use wp_redirect() with wp_safe_redirect() when possible.
+* Use wp_safe_redirect() when possible.
 * Move PHP class into a separate file.
 * Change install instructions from a must-use plugin to a network-activated plugin.
 

@@ -1,5 +1,5 @@
 <?php
-/*
+/**
 Plugin Name: SimpleShib
 Plugin URI: https://github.com/srguglielmo/SimpleShib
 Description: User authentication via Shibboleth Single Sign-On.
@@ -7,23 +7,27 @@ Version: 1.0.2
 Author: Steve Guglielmo
 License: MIT
 Please see the LICENSE file for more information.
-*/
 
-defined('ABSPATH') or die('No script kiddies please!');
+@package SimpleShib
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	die( 'No script kiddies please!' );
+}
 
 new SimpleShib();
 
 class SimpleShib {
 
 	//
-	// SETTINGS
+	// SETTINGS.
 	//
 
-	// Set to TRUE to print some debugging messages to the PHP error log.
-	private $_debug = FALSE;
+	// Set to true to print some debugging messages to the PHP error log.
+	private $_debug = false;
 
-	// Set to TRUE to disable ALL login functionality, both WordPress native and Shib.
-	private $_logins_disabled = FALSE;
+	// Set to true to disable ALL login functionality, both WordPress native and Shib.
+	private $_logins_disabled = false;
 
 	// The URL to initiate the session at the IdP. This should be "/Shibboleth.sso/Login".
 	// This is handled by the SP on your server. The user will be redirected here upon login.
@@ -43,14 +47,14 @@ class SimpleShib {
 	private $_lost_pass_url = 'http://example.com/accounts';
 
 	//
-	// END SETTINGS
+	// END SETTINGS.
 	//
 
 	public function __construct() {
-		// Remove all existing wordpress authentication methods.
+		// Remove all existing WordPress authentication methods.
 		remove_all_filters( 'authenticate' );
 
-		// Hide password fields on profile.php and user-edit.php
+		// Hide password fields on profile.php and user-edit.php.
 		add_filter( 'show_password_fields', '__return_false' );
 
 		// Do not allow password resets within WP.
@@ -87,14 +91,14 @@ class SimpleShib {
 	// This function is run on the WordPress login page.
 	// Returns a WP_Error or a WP_User object.
 	public function authenticate_or_redirect( $user, $username, $password ) {
-		if ( TRUE === $this->_logins_disabled ) {
+		if ( true === $this->_logins_disabled ) {
 			$error_obj = new WP_Error( 'shib', 'All logins are currently disabled.' );
 			return $error_obj;
 		}
 
 		// Logged in at IdP and WP. Redirect to /.
 		// TODO: Add a setting for a custom redirect path?
-		if ( TRUE === is_user_logged_in() && TRUE === $this->_is_shib_session_active() ) {
+		if ( true === is_user_logged_in() && true === $this->_is_shib_session_active() ) {
 			if ( $this->_debug ) {
 				error_log( 'Shibboleth Debug: auth_or_redirect(): Logged in at WP and IdP. Redirecting to /.' );
 			}
@@ -104,13 +108,13 @@ class SimpleShib {
 		}
 
 		// Logged in at IdP but not WP. Login to WP.
-		if ( FALSE === is_user_logged_in() && TRUE === $this->_is_shib_session_active() ) {
+		if ( false === is_user_logged_in() && true === $this->_is_shib_session_active() ) {
 			if ( $this->_debug ) {
 				error_log( 'Shibboleth Debug: auth_or_redirect(): Logged in at IdP but not WP.' );
 			}
 
-			$loginObj = $this->_login_to_wordpress();
-			return $loginObj;
+			$login_obj = $this->_login_to_wordpress();
+			return $login_obj;
 		}
 
 		// Logged in nowhere. Redirect to IdP login page.
@@ -118,7 +122,7 @@ class SimpleShib {
 			error_log( 'Shibboleth Debug: auth_or_redirect(): Logged in nowhere!' );
 		}
 
-		if ( isset($_GET['redirect_to']) ) {
+		if ( isset( $_GET['redirect_to'] ) ) {
 			wp_redirect( $this->_get_initiator_url( $_GET['redirect_to'] ) );
 		} else {
 			wp_redirect( $this->_get_initiator_url() );
@@ -135,18 +139,18 @@ class SimpleShib {
 	// This checks for the shibboleth HTTP headers. These headers cannot be forged because they actually
 	// are generated locally in shibd via Apache's mod_shib. If the user spoofs the "mail" header,
 	// for example, it actually shows up as HTTP_MAIL instead of "mail".
-	// Returns TRUE or FALSE.
+	// Returns true or false.
 	private function _is_shib_session_active() {
-		if ( isset($_SERVER['AUTH_TYPE']) && $_SERVER['AUTH_TYPE'] == 'shibboleth'
-			&& ! empty($_SERVER['Shib-Session-ID'])
-			&& ! empty($_SERVER['uid'])
-			&& ! empty($_SERVER['givenName'])
-			&& ! empty($_SERVER['sn'])
-			&& ! empty($_SERVER['mail'])
+		if ( isset( $_SERVER['AUTH_TYPE'] ) && 'shibboleth' === $_SERVER['AUTH_TYPE']
+			&& ! empty( $_SERVER['Shib-Session-ID'] )
+			&& ! empty( $_SERVER['uid'] )
+			&& ! empty( $_SERVER['givenName'] )
+			&& ! empty( $_SERVER['sn'] )
+			&& ! empty( $_SERVER['mail'] )
 		) {
-			return TRUE;
+			return true;
 		} else {
-			return FALSE;
+			return false;
 		}
 	}
 
@@ -154,16 +158,16 @@ class SimpleShib {
 	// Generate the URL to initiate Shibboleth login.
 	// This takes in mind the site the user is logging in on
 	// as well as the redirect_to GET value.
-	private function _get_initiator_url( $redirect_to = NULL) {
-		 // Get the login page URL.
+	private function _get_initiator_url( $redirect_to = null ) {
+		// Get the login page URL.
 		$return_to = get_site_url( get_current_blog_id(), 'wp-login.php', 'login' );
 
-		if ( ! empty($redirect_to) ) {
-			// Don't urlencode($RedirectTo) - we do this below.
+		if ( ! empty( $redirect_to ) ) {
+			// Don't rawurlencode($RedirectTo) - we do this below.
 			$return_to = add_query_arg( 'redirect_to', $redirect_to, $return_to );
 		}
 
-		$initiator_url = $this->_session_initiator_url . '?target=' . urlencode($return_to);
+		$initiator_url = $this->_session_initiator_url . '?target=' . rawurlencode( $return_to );
 
 		return $initiator_url;
 	}
@@ -183,40 +187,42 @@ class SimpleShib {
 		// Check to see if they exist locally.
 		$user_obj = get_user_by( 'login', $shib['username'] );
 
-		// See https://developer.wordpress.org/reference/functions/wp_insert_user/
+		// See https://developer.wordpress.org/reference/functions/wp_insert_user/.
 		$insert_user_data = array(
 				// user_pass is irrelevant since we removed all internal WP auth functions.
-				// However, if this plugin is ever disabled/removed, WP will revert back to using user_pass, so it has to be "safe."
-				'user_pass'     => sha1(microtime()),
+				// However, if this plugin is ever disabled/removed, WP will revert back to using user_pass, so it has to be safe.
+				'user_pass'     => sha1( microtime() ),
 				'user_login'    => $shib['username'],
 				'user_nicename' => $shib['username'],
 				'user_email'    => $shib['email'],
-				'display_name'  => $shib['firstName'] . " " . $shib['lastName'],
+				'display_name'  => $shib['firstName'] . ' ' . $shib['lastName'],
 				'nickname'      => $shib['username'],
 				'first_name'    => $shib['firstName'],
-				'last_name'     => $shib['lastName']
+				'last_name'     => $shib['lastName'],
 		);
 
 		// If wp_insert_user() receives 'ID' in the array, it will update the user data of an existing account
 		// instead of creating a new account.
 		// Also, return slightly different error messages below based on if we're updating an account or creating an account.
 		// This is to aid debugging any issues/tickets that may occur.
-		if ( FALSE !== $user_obj && is_numeric($user_obj->ID) ) {
+		if ( false !== $user_obj && is_numeric( $user_obj->ID ) ) {
 			$insert_user_data['ID'] = $user_obj->ID;
-			$errorMsg             = 'syncing';
+			$error_msg              = 'syncing';
 		} else {
-			$errorMsg = 'creating';
+			$error_msg = 'creating';
 		}
 
 		$new_user = wp_insert_user( $insert_user_data );
 
 		// wp_insert_user() returns either int of the userid or WP_Error object.
-		if ( is_wp_error($new_user) || !is_int($new_user) ) {
+		if ( is_wp_error( $new_user ) || ! is_int( $new_user ) ) {
 			do_action( 'wp_login_failed', $shib['username'] ); // Fire any login-failed hooks.
 
 			// TODO: Setting for support ticket URL.
-			$error_obj = new WP_Error( 'shib', '<strong>ERROR:</strong> credentials are correct, but an error occurred '
-				. $errorMsg . ' the local account. Please open a support ticket with this error.' );
+			$error_obj = new WP_Error(
+				'shib',
+				'<strong>ERROR:</strong> credentials are correct, but an error occurred ' . $error_msg . ' the local account. Please open a support ticket with this error.'
+			);
 			return $error_obj;
 		} else {
 			// Created the user successfully.
@@ -239,7 +245,7 @@ class SimpleShib {
 	// If the Shib session disappears while the user is logged into WP, log them out.
 	// Hooked on 'init'.
 	public function validate_shib_session() {
-		if ( TRUE === is_user_logged_in() && FALSE === $this->_is_shib_session_active() ) {
+		if ( true === is_user_logged_in() && false === $this->_is_shib_session_active() ) {
 			if ( $this->_debug ) {
 				error_log( 'Shibboleth Debug: validate_shib_session(): Logged in at WP but not IdP. Logging out!' );
 			}
@@ -258,7 +264,7 @@ class SimpleShib {
 	// Various hooks for the admin/user profile screen. Hooked on 'admin_init'.
 	public function add_admin_hooks() {
 		// 'show_user_profile' fires after the "About Yourself" section when a user is editing their own profile.
-		if ( ! empty($this->_pass_change_url) ) {
+		if ( ! empty( $this->_pass_change_url ) ) {
 			add_action( 'show_user_profile', array( $this, 'add_password_change_link' ) );
 		}
 
@@ -276,7 +282,7 @@ class SimpleShib {
 	public function add_password_change_link() {
 		echo '<table class="form-table"><tr>' . "\n";
 		echo '<th>Change Password</th>' . "\n";
-		echo '<td><a href="' . esc_url($this->_pass_change_url) . '">' . 'Change your password' . '</a></td>' . "\n";
+		echo '<td><a href="' . esc_url( $this->_pass_change_url ) . '">Change your password</a></td>' . "\n";
 		echo '</tr></table>' . "\n";
 	}
 
@@ -297,13 +303,40 @@ class SimpleShib {
 
 	// Don't just disable the HTML form fields; also make sure we handle the processing of POST data as well.
 	// Script kiddies can use a DOM editor to re-enable the form fields manually.
-	// TODO: This doesn't work perfectly. In my testing, I found problems with 'pre_user_email' not blocking email changes.
-	// Since user data is updated from Shib upon every login, it really isn't a big deal. This may be a WP bug.
 	public function disable_profile_fields_post() {
-		add_filter('pre_user_first_name', function () { $user_obj = wp_get_current_user(); return $user_obj->first_name; });
-		add_filter('pre_user_last_name', function () { $user_obj = wp_get_current_user(); return $user_obj->last_name; });
-		add_filter('pre_user_nickname', function () { $user_obj = wp_get_current_user(); return $user_obj->user_nicename; });
-		add_filter('pre_user_email', function () { $user_obj = wp_get_current_user(); return $user_obj->user_email; });
+		add_filter(
+			'pre_user_first_name',
+			function () {
+				$user_obj = wp_get_current_user();
+				return $user_obj->first_name;
+			}
+		);
+
+		add_filter(
+			'pre_user_last_name',
+			function () {
+				$user_obj = wp_get_current_user();
+				return $user_obj->last_name;
+			}
+		);
+
+		add_filter(
+			'pre_user_nickname',
+			function () {
+				$user_obj = wp_get_current_user();
+				return $user_obj->user_nicename;
+			}
+		);
+
+		// TODO: This doesn't work perfectly. In my testing, I found problems with 'pre_user_email' not blocking email changes.
+		// Since user data is updated from Shib upon every login, it really isn't a big deal. This may be a WP bug.
+		add_filter(
+			'pre_user_email',
+			function () {
+				$user_obj = wp_get_current_user();
+				return $user_obj->user_email;
+			}
+		);
 	}
 
 

@@ -102,7 +102,7 @@ class Simple_Shib {
 				error_log( 'Shibboleth Debug: auth_or_redirect(): Logged in at WP and IdP. Redirecting to /.' );
 			}
 
-			wp_redirect( '/' );
+			wp_safe_redirect( '/' );
 			exit();
 		}
 
@@ -122,9 +122,9 @@ class Simple_Shib {
 		}
 
 		if ( isset( $_GET['redirect_to'] ) ) {
-			wp_redirect( $this->_get_initiator_url( $_GET['redirect_to'] ) );
+			wp_safe_redirect( $this->_get_initiator_url( $_GET['redirect_to'] ) );
 		} else {
-			wp_redirect( $this->_get_initiator_url() );
+			wp_safe_redirect( $this->_get_initiator_url() );
 		}
 
 		exit();
@@ -236,7 +236,7 @@ class Simple_Shib {
 	// TODO: Is this still needed?
 	public function shib_logout() {
 		wp_logout();
-		wp_redirect( $this->_session_logout_url );
+		wp_safe_redirect( $this->_session_logout_url );
 		exit();
 	}
 
@@ -250,7 +250,7 @@ class Simple_Shib {
 			}
 
 			wp_logout();
-			wp_redirect( '/' );
+			wp_safe_redirect( '/' );
 			exit();
 		}
 	}

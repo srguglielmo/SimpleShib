@@ -7,7 +7,7 @@
  * @link https://wordpress.org/plugins/simpleshib/
  *
  * @package SimpleShib
- * @since 1.0.3
+ * @since 1.0.0
  */
 
 /**
@@ -15,46 +15,85 @@
  *
  * The Simple_Shib class is comprised of methods to support Single Sign-On via Shibboleth.
  *
- * @since 1.0.3
+ * @since 1.0.0
  */
 class Simple_Shib {
-	//
-	// SETTINGS.
-	//
+	/**
+	 * Debugging. Set to true to print debugging messages to the PHP error log.
+	 *
+	 * @since 1.0.0
+	 * @var bool $debug
+	 */
+	private $debug = false;
 
-	// Set to true to print some debugging messages to the PHP error log.
-	private $_debug = false;
+	/**
+	 * Disable authentication. Set to true to disable ALL login functionality, both WordPress native and Shib.
+	 *
+	 * @since 1.0.0
+	 * @var bool $logins_disabled
+	 */
+	private $logins_disabled = false;
 
-	// Set to true to disable ALL login functionality, both WordPress native and Shib.
-	private $_logins_disabled = false;
+	/**
+	 * Automatic account provisioning. When enabled, anyone with valid credentials at
+	 * the IdP can login to WordPress. If they do not have a local WordPress account, one
+	 * will be created for them. When the setting is disabled, the login process will fail
+	 * if the user does not have a matching local WordPress account.
+	 *
+	 * @since 1.1.0
+	 * @var bool $auto_account_provision
+	 */
+	private $auto_account_provision = true;
 
-	// When automatic account provisioning is enabled, anyone with valid credentials at
-	// the IdP can login to WordPress. If they do not have a local WordPress account, one
-	// will be created for them. When the setting is disabled, the login process will fail
-	// if the user does not have a matching local WordPress account.
-	private $_auto_account_provision = true;
+	/**
+	 * Session initiator URL. The URL to initiate the session at the IdP. The user will be
+	 * redirected here upon login. This should typically be "/Shibboleth.sso/Login" to ensure
+	 * the SP on your server handles the request.
+	 *
+	 * @since 1.0.0
+	 * @var string $session_initiator_url
+	 */
+	private $session_initiator_url = '/Shibboleth.sso/Login';
 
-	// The URL to initiate the session at the IdP. This should be "/Shibboleth.sso/Login".
-	// This is handled by the SP on your server. The user will be redirected here upon login.
-	// This cannot have any GET params due to _get_initiator_url().
-	private $_session_initiator_url = '/Shibboleth.sso/Login';
+	/**
+	 * Session logout URL. The user will be redirected here after being logged out of
+	 * WordPress. It should typically be "/Shibboleth.sso/Logout" to ensure the SP on
+	 * your server handles the request. There is an optional "return" parameter that
+	 * can be used to redirect to a custom/central logout page.
+	 * E.g.: '/Shibboleth.sso/Logout?return=https://idp.example.com/idp/profile/Logout'
+	 *
+	 * @since 1.0.0
+	 * @var string $session_logout_url
+	 */
+	private $session_logout_url = '/Shibboleth.sso/Logout';
 
-	// Logout URL. Handled by the SP on your server. This should be "/Shibboleth.sso/Logout"
-	// and can have an optional "?return=$URL" to redirect to a custom logout page.
-	// Eg: /Shibboleth.sso/Logout?return=https://idp.example.com/idp/profile/Logout
-	private $_session_logout_url = '/Shibboleth.sso/Logout';
+	/**
+	 * Password change URL. The "change password" link in WordPress will point to this URL.
+	 * Set to an empty string to disable/hide the link entirely.
+	 *
+	 * @since 1.0.0
+	 * @var string $pass_change_url
+	 */
+	private $pass_change_url = 'http://example.com/accounts';
 
-	// A URL for the 'Change Password' link for users.
-	// Set to an empty string to disable this link.
-	private $_pass_change_url = 'http://example.com/accounts';
+	/**
+	 * Lost password URL. Password reset requests will point to this URL.
+	 * This is required and cannot be an empty string.
+	 *
+	 * @since 1.0.0
+	 * @var string $lost_pass_url
+	 */
+	private $lost_pass_url = 'http://example.com/accounts';
 
-	// "Lost Password" URL. Required. Can be the same as above.
-	private $_lost_pass_url = 'http://example.com/accounts';
-
-	//
-	// END SETTINGS.
-	//
-
+	/**
+	 * Construct method.
+	 *
+	 * The construct of this class adds the Shibboleth authentication handler
+	 * function to the WordPress authentication hook, hides the password fields,
+	 * and tweaks a few things on the user profile page.
+	 *
+	 * @since 1.0.0
+	 */
 	public function __construct() {
 		// Remove all existing WordPress authentication methods.
 		remove_all_filters( 'authenticate' );
@@ -71,7 +110,7 @@ class Simple_Shib {
 		// Add our Shib auth function to WordPress's authentication workflow.
 		add_filter( 'authenticate', array( $this, 'authenticate_or_redirect' ), 10, 3 );
 
-		// Bypass the logout confirmation and redirect to $_session_logout_url defined above.
+		// Bypass the logout confirmation and redirect to $session_logout_url defined above.
 		add_action( 'login_form_logout', array( $this, 'shib_logout' ) );
 
 		// Check for IdP sessions that have disappeared.
@@ -86,26 +125,63 @@ class Simple_Shib {
 	}
 
 
-	// Send the "lost password" link to the defined location.
+	/**
+	 * Lost password.
+	 *
+	 * This method redirects the user to the URL defined in the settings above.
+	 * It is hooked on 'login_form_lostpassword'.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @see __construct()
+	 * @see wp_redirect()
+	 */
 	public function lost_password() {
-		wp_redirect( $this->_lost_pass_url );
+		// wp_safe_redirect() is not used here because $lost_pass_url is set
+		// above (not provided by the user) and is likely an external URL.
+		// Disable the phpcs sniff to avoid a warning.
+		// phpcs:disable WordPress.Security.SafeRedirect.wp_redirect_wp_redirect
+		wp_redirect( $this->lost_pass_url );
+		// phpcs:enable
 		exit();
 	}
 
 
-	// This function is run on the WordPress login page.
-	// Returns a WP_Error or a WP_User object.
+	/**
+	 * Authenticate or Redirect
+	 *
+	 * This method handles user authentication. It either returns an error object,
+	 * a user object, or redirects the user to the homepage or SSO initiator URL.
+	 * It is hooked on 'authenticate'.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @see __construct()
+	 * {@see 'authenticate'}
+	 * @see is_user_logged_in()
+	 * @see is_shib_session_active()
+	 * @see login_to_wordpress()
+	 * @see wp_safe_redirect()
+	 * @see get_initiator_url()
+	 *
+	 * @param WP_User $user WP_User if the user is authenticated. WP_Error or null otherwise.
+	 * @param string  $username Username or email address.
+	 * @param string  $password User password.
+	 * @return WP_User Returns WP_User for successful authentication, otherwise WP_Error.
+	 */
 	public function authenticate_or_redirect( $user, $username, $password ) {
-		if ( true === $this->_logins_disabled ) {
+		if ( true === $this->logins_disabled ) {
 			$error_obj = new WP_Error( 'shib', 'All logins are currently disabled.' );
 			return $error_obj;
 		}
 
 		// Logged in at IdP and WP. Redirect to /.
 		// TODO: Add a setting for a custom redirect path?
-		if ( true === is_user_logged_in() && true === $this->_is_shib_session_active() ) {
-			if ( $this->_debug ) {
-				error_log( 'Shibboleth Debug: auth_or_redirect(): Logged in at WP and IdP. Redirecting to /.' );
+		if ( true === is_user_logged_in() && true === $this->is_shib_session_active() ) {
+			if ( $this->debug ) {
+				// phpcs:disable WordPress.PHP.DevelopmentFunctions.error_log_error_log
+				error_log( 'Shibboleth Debug: Logged in at WP and IdP. Redirecting to /.' );
+				// phpcs:enable
 			}
 
 			wp_safe_redirect( '/' );
@@ -113,24 +189,31 @@ class Simple_Shib {
 		}
 
 		// Logged in at IdP but not WP. Login to WP.
-		if ( false === is_user_logged_in() && true === $this->_is_shib_session_active() ) {
-			if ( $this->_debug ) {
-				error_log( 'Shibboleth Debug: auth_or_redirect(): Logged in at IdP but not WP.' );
+		if ( false === is_user_logged_in() && true === $this->is_shib_session_active() ) {
+			if ( $this->debug ) {
+				// phpcs:disable WordPress.PHP.DevelopmentFunctions.error_log_error_log
+				error_log( 'Shibboleth Debug: Logged in at IdP but not WP.' );
+				// phpcs:enable
 			}
 
-			$login_obj = $this->_login_to_wordpress();
+			$login_obj = $this->login_to_wordpress();
 			return $login_obj;
 		}
 
 		// Logged in nowhere. Redirect to IdP login page.
-		if ( $this->_debug ) {
-			error_log( 'Shibboleth Debug: auth_or_redirect(): Logged in nowhere!' );
+		if ( $this->debug ) {
+			// phpcs:disable WordPress.PHP.DevelopmentFunctions.error_log_error_log
+			error_log( 'Shibboleth Debug: Logged in nowhere!' );
+			// phpcs:enable
 		}
 
+		// The redirect_to parameter is rawurlencode()ed in get_initiator_url().
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended,WordPress.Security.ValidatedSanitizedInput.MissingUnslash,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		if ( isset( $_GET['redirect_to'] ) ) {
-			wp_safe_redirect( $this->_get_initiator_url( $_GET['redirect_to'] ) );
+			wp_safe_redirect( $this->get_initiator_url( $_GET['redirect_to'] ) );
+			// phpcs:enable
 		} else {
-			wp_safe_redirect( $this->_get_initiator_url() );
+			wp_safe_redirect( $this->get_initiator_url() );
 		}
 
 		exit();
@@ -140,12 +223,19 @@ class Simple_Shib {
 	}
 
 
-	// Check if a Shibboleth session is active. This means the user has logged into the IdP successfully.
-	// This checks for the shibboleth HTTP headers. These headers cannot be forged because they actually
-	// are generated locally in shibd via Apache's mod_shib. If the user spoofs the "mail" header,
-	// for example, it actually shows up as HTTP_MAIL instead of "mail".
-	// Returns true or false.
-	private function _is_shib_session_active() {
+	/**
+	 * Validate Shibboleth IdP session.
+	 *
+	 * This method determines if a Shibboleth session is active at the IdP by checking
+	 * for the shibboleth HTTP headers. These headers cannot be forged because they are
+	 * generated locally by shibd via Apache's mod_shib. For example, if the user attempts
+	 * to spoof the "mail" header, it shows up as HTTP_MAIL instead of "mail".
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return bool True if the IdP session is active, otherwise false.
+	 */
+	private function is_shib_session_active() {
 		if ( isset( $_SERVER['AUTH_TYPE'] ) && 'shibboleth' === $_SERVER['AUTH_TYPE']
 			&& ! empty( $_SERVER['Shib-Session-ID'] )
 			&& ! empty( $_SERVER['uid'] )
@@ -160,10 +250,22 @@ class Simple_Shib {
 	}
 
 
-	// Generate the URL to initiate Shibboleth login.
-	// This takes in mind the site the user is logging in on
-	// as well as the redirect_to GET value.
-	private function _get_initiator_url( $redirect_to = null ) {
+	/**
+	 * Generate the SSO initiator URL.
+	 *
+	 * This function generates the initiator URL for the Shibboleth session.
+	 * In the case of multisite, the site that the user is logging in one is
+	 * added as a return_to parameter to ensure they return to the same site.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @see get_site_url()
+	 * @see get_current_blog_id()
+	 *
+	 * @param string $redirect_to Optional. URL parameter from client. Null.
+	 * @return string Full URL for SSO initialization.
+	 */
+	private function get_initiator_url( $redirect_to = null ) {
 		// Get the login page URL.
 		$return_to = get_site_url( get_current_blog_id(), 'wp-login.php', 'login' );
 
@@ -172,26 +274,40 @@ class Simple_Shib {
 			$return_to = add_query_arg( 'redirect_to', $redirect_to, $return_to );
 		}
 
-		$initiator_url = $this->_session_initiator_url . '?target=' . rawurlencode( $return_to );
+		$initiator_url = $this->session_initiator_url . '?target=' . rawurlencode( $return_to );
 
 		return $initiator_url;
 	}
 
 
-	// Log a user into WP locally. This is called from authenticate_or_redirect().
-	// If this is the first time we've seen this user, a new WP account will be created.
-	// Exiting users will have their data updated based on the Shib headers.
-	private function _login_to_wordpress() {
-		// The headers have been confirmed to be !empty() in _is_shib_session_active() above.
-		// The data is coming from the IdP, not the user, so lets trust it.
+	/**
+	 * Log a user into WordPress.
+	 *
+	 * If $auto_account_provision is enabled, a WordPress account will be created if one
+	 * does not exist. User data, including username, name, and email, are updated with
+	 * values from the IdP during every user login.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @see authenticate_or_redirect()
+	 * @see get_user_by()
+	 * @see wp_insert_user()
+	 *
+	 * @return WP_User Returns WP_User for successful authentication, otherwise WP_Error.
+	 */
+	private function login_to_wordpress() {
+		// The headers have been confirmed to be !empty() in is_shib_session_active() above.
+		// The data is coming from the IdP, not the user, so it is trustworthy.
+		// phpcs:disable WordPress.Security.ValidatedSanitizedInput.InputNotValidated,WordPress.Security.ValidatedSanitizedInput.MissingUnslash,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		$shib['username']  = $_SERVER['uid'];
 		$shib['firstName'] = $_SERVER['givenName'];
 		$shib['lastName']  = $_SERVER['sn'];
 		$shib['email']     = $_SERVER['mail'];
+		// phpcs:enable
 
 		// Check to see if they exist locally.
 		$user_obj = get_user_by( 'login', $shib['username'] );
-		if ( false === $user_obj && false === $this->_auto_account_provision ) {
+		if ( false === $user_obj && false === $this->auto_account_provision ) {
 			do_action( 'wp_login_failed', $shib['username'] ); // Fire any login-failed hooks.
 			$error_obj = new WP_Error(
 				'shib',
@@ -200,24 +316,21 @@ class Simple_Shib {
 			return $error_obj;
 		}
 
-		// See https://developer.wordpress.org/reference/functions/wp_insert_user/.
+		// The user_pass is irrelevant since we removed all internal WP auth functions.
+		// However, if SimpleShib is ever disabled, WP will revert back to using user_pass, so it has to be safe.
 		$insert_user_data = array(
-				// user_pass is irrelevant since we removed all internal WP auth functions.
-				// However, if this plugin is ever disabled/removed, WP will revert back to using user_pass, so it has to be safe.
-				'user_pass'     => sha1( microtime() ),
-				'user_login'    => $shib['username'],
-				'user_nicename' => $shib['username'],
-				'user_email'    => $shib['email'],
-				'display_name'  => $shib['firstName'] . ' ' . $shib['lastName'],
-				'nickname'      => $shib['username'],
-				'first_name'    => $shib['firstName'],
-				'last_name'     => $shib['lastName'],
+			'user_pass'     => sha1( microtime() ),
+			'user_login'    => $shib['username'],
+			'user_nicename' => $shib['username'],
+			'user_email'    => $shib['email'],
+			'display_name'  => $shib['firstName'] . ' ' . $shib['lastName'],
+			'nickname'      => $shib['username'],
+			'first_name'    => $shib['firstName'],
+			'last_name'     => $shib['lastName'],
 		);
 
-		// If wp_insert_user() receives 'ID' in the array, it will update the user data of an existing account
-		// instead of creating a new account.
-		// Also, return slightly different error messages below based on if we're updating an account or creating an account.
-		// This is to aid debugging any issues/tickets that may occur.
+		// If wp_insert_user() receives 'ID' in the array, it will update the
+		// user data of an existing account instead of creating a new account.
 		if ( false !== $user_obj && is_numeric( $user_obj->ID ) ) {
 			$insert_user_data['ID'] = $user_obj->ID;
 			$error_msg              = 'syncing';
@@ -231,7 +344,7 @@ class Simple_Shib {
 		if ( is_wp_error( $new_user ) || ! is_int( $new_user ) ) {
 			do_action( 'wp_login_failed', $shib['username'] ); // Fire any login-failed hooks.
 
-			// TODO: Setting for support ticket URL.
+			// TODO: Add setting for support ticket URL.
 			$error_obj = new WP_Error(
 				'shib',
 				'<strong>ERROR:</strong> credentials are correct, but an error occurred ' . $error_msg . ' the local account. Please open a support ticket with this error.'
@@ -245,22 +358,51 @@ class Simple_Shib {
 	}
 
 
-	// Bypass the "are you sure" prompt when logging out and
-	// redirect to the Shibboleth logout URL.
-	// TODO: Is this still needed?
+	/**
+	 * User logout handler.
+	 *
+	 * This method bypasses the "Are you sure?" prompt when logging out.
+	 * It redirects the user directly to the SSO logout URL.
+	 * It is hooked on 'login_form_logout'.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @see __construct().
+	 * {@see 'login_form_logout'}
+	 * @see wp_logout().
+	 * @see wp_safe_redirect().
+	 */
 	public function shib_logout() {
+		// TODO: Is this still needed to bypass the logout prompt?
 		wp_logout();
-		wp_safe_redirect( $this->_session_logout_url );
+		wp_safe_redirect( $this->session_logout_url );
 		exit();
 	}
 
 
-	// If the Shib session disappears while the user is logged into WP, log them out.
-	// Hooked on 'init'.
+	/**
+	 * Validate the Shibboleth IdP session
+	 *
+	 * This method validates the Shibboleth login session at the IdP.
+	 * If the IdP's session disappears while the user is logged into WordPress
+	 * locally, this will log them out.
+	 * It is hooked on 'init'.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @see __construct()
+	 * {@see 'init'}
+	 * @see is_user_logged_in()
+	 * @see is_shib_session_active()
+	 * @see wp_logout()
+	 * @see wp_safe_redirect()
+	 */
 	public function validate_shib_session() {
-		if ( true === is_user_logged_in() && false === $this->_is_shib_session_active() ) {
-			if ( $this->_debug ) {
+		if ( true === is_user_logged_in() && false === $this->is_shib_session_active() ) {
+			if ( $this->debug ) {
+				// phpcs:disable WordPress.PHP.DevelopmentFunctions.error_log_error_log
 				error_log( 'Shibboleth Debug: validate_shib_session(): Logged in at WP but not IdP. Logging out!' );
+				// phpcs:enable
 			}
 
 			wp_logout();
@@ -270,14 +412,24 @@ class Simple_Shib {
 	}
 
 
-	//
-	// The functions below here are related to the user profile page.
-	//
-
-	// Various hooks for the admin/user profile screen. Hooked on 'admin_init'.
+	/**
+	 * Add hooks to the admin sections.
+	 *
+	 * This method adds several hooks that change the user profile edit page.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @see __construct()
+	 * {@see 'admin_init'}
+	 * @see add_action()
+	 * {@see 'show_user_profile'}
+	 * {@see 'admin_footer-profile.php'}
+	 * {@see 'admin_footer-user-edit.php'}
+	 * {@see 'personal_options_update'}
+	 */
 	public function add_admin_hooks() {
 		// 'show_user_profile' fires after the "About Yourself" section when a user is editing their own profile.
-		if ( ! empty( $this->_pass_change_url ) ) {
+		if ( ! empty( $this->pass_change_url ) ) {
 			add_action( 'show_user_profile', array( $this, 'add_password_change_link' ) );
 		}
 
@@ -291,17 +443,35 @@ class Simple_Shib {
 	}
 
 
-	// Add another row at the bottom of the users' profile page that includes a password reset link.
+	/**
+	 * Add password change link.
+	 *
+	 * This method adds a row to the bottom of the user profile page that contains
+	 * a password reset link pointing to the URL defined in the settings.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @see add_admin_hooks()
+	 */
 	public function add_password_change_link() {
 		echo '<table class="form-table"><tr>' . "\n";
 		echo '<th>Change Password</th>' . "\n";
-		echo '<td><a href="' . esc_url( $this->_pass_change_url ) . '">Change your password</a></td>' . "\n";
+		echo '<td><a href="' . esc_url( $this->pass_change_url ) . '">Change your password</a></td>' . "\n";
 		echo '</tr></table>' . "\n";
 	}
 
 
-	// Put some jquery in the footer that disables the html form fields for: first name, last name, nickname, and email.
-	// NOTE: This just disables the forms, it doesn't handle the POST data. See disable_profile_fields_post() below.
+	/**
+	 * Disable profile fields.
+	 *
+	 * This method adds jQuery in the footer that disables the HTML form fields for
+	 * first name, last name, nickname, and email address.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @see add_admin_hooks()
+	 * @see disable_profile_fields_post()
+	 */
 	public function disable_profile_fields() {
 		// Use readonly instead of disabled because disabled fields are not included in the POST data.
 		echo '<script type="text/javascript">jQuery(function() {' . "\n";
@@ -314,8 +484,18 @@ class Simple_Shib {
 	}
 
 
-	// Don't just disable the HTML form fields; also make sure we handle the processing of POST data as well.
-	// Script kiddies can use a DOM editor to re-enable the form fields manually.
+	/**
+	 * Disable profile fields POST data.
+	 *
+	 * This method disables the processing of POST data from the user profile form for
+	 * first name, last name, nickname, and email address.
+	 * This is necessary because a DOM editor can be used to re-enable the form fields manually.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @see add_admin_hooks()
+	 * @see disable_profile_fields()
+	 */
 	public function disable_profile_fields_post() {
 		add_filter(
 			'pre_user_first_name',
@@ -341,8 +521,10 @@ class Simple_Shib {
 			}
 		);
 
-		// TODO: This doesn't work perfectly. In my testing, I found problems with 'pre_user_email' not blocking email changes.
-		// Since user data is updated from Shib upon every login, it really isn't a big deal. This may be a WP bug.
+		// TODO
+		// In my testing, I found problems with 'pre_user_email' not blocking email changes.
+		// Since user data is updated from Shib upon every login, it really isn't a big deal.
+		// This may be a WP core bug.
 		add_filter(
 			'pre_user_email',
 			function () {

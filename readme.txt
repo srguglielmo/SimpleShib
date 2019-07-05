@@ -2,7 +2,7 @@
 Contributors: srg-1
 Tags: shibboleth, authentication, sso, login
 Requires at least: 4.6
-Tested up to: 5.1
+Tested up to: 5.2
 License: MIT
 
 SimpleShib is a WordPress plugin to authenticate users with a Shibboleth Single Sign-On infrastructure.
@@ -19,9 +19,7 @@ User data (login, name, and email) is updated in WordPress from the IdP data upo
 
 On multisite instances of WordPress, **SimpleShib** can only be network-activated.
 
-**SimpleShib** is developed on GitHub. Please submit bug reports and contributions on [the GitHub project page](https://github.com/srguglielmo/SimpleShib).
-
-For general support and questions, please use the [WordPress support forum](https://wordpress.org/support/plugin/simpleshib/).
+**SimpleShib** is developed on GitHub. Please submit bug reports and contributions on [the GitHub project page](https://github.com/srguglielmo/SimpleShib). For general support and questions, please use the [WordPress support forum](https://wordpress.org/support/plugin/simpleshib/).
 
 This plugin is not affiliated with the Shibboleth or Internet2 organizations.
 
@@ -83,6 +81,11 @@ See the `LICENSE` file for full details.
 
 == Changelog ==
 
+= 1.1.1 =
+* Compatibility with WordPress 5.2.
+* Improved compliance with WordPress coding standards.
+* Minor documentation updates.
+
 = 1.1.0 =
 * Add a boolean setting for automatic account provisioning.
 * Update example logout URL to return to the IdP's logout page.
@@ -103,5 +106,5 @@ See the `LICENSE` file for full details.
 * Very minor documentation and code changes.
 * Added plugin banner to assets.
 
-= 1.0 =
+= 1.0.0 =
 * Initial release.

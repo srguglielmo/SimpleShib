@@ -19,20 +19,12 @@
  */
 class Simple_Shib {
 	/**
-	 * Debugging. Set to true to print debugging messages to the PHP error log.
+	 * Debugging. If true, print debugging messages to the PHP error log.
 	 *
 	 * @since 1.0.0
 	 * @var bool $debug
 	 */
-	private $debug = false;
-
-	/**
-	 * Disable authentication. Set to true to disable ALL login functionality, both WordPress native and Shib.
-	 *
-	 * @since 1.0.0
-	 * @var bool $logins_disabled
-	 */
-	private $logins_disabled = false;
+	private $debug;
 
 	/**
 	 * Automatic account provisioning. When enabled, anyone with valid credentials at
@@ -43,7 +35,7 @@ class Simple_Shib {
 	 * @since 1.1.0
 	 * @var bool $auto_account_provision
 	 */
-	private $auto_account_provision = true;
+	private $auto_account_provision;
 
 	/**
 	 * Session initiator URL. The URL to initiate the session at the IdP. The user will be
@@ -53,7 +45,7 @@ class Simple_Shib {
 	 * @since 1.0.0
 	 * @var string $session_initiator_url
 	 */
-	private $session_initiator_url = '/Shibboleth.sso/Login';
+	private $session_initiator_url;
 
 	/**
 	 * Session logout URL. The user will be redirected here after being logged out of
@@ -65,7 +57,7 @@ class Simple_Shib {
 	 * @since 1.0.0
 	 * @var string $session_logout_url
 	 */
-	private $session_logout_url = '/Shibboleth.sso/Logout';
+	private $session_logout_url;
 
 	/**
 	 * Password change URL. The "change password" link in WordPress will point to this URL.
@@ -95,20 +87,20 @@ class Simple_Shib {
 	 * @since 1.0.0
 	 */
 	public function __construct() {
-		// Remove all existing WordPress authentication methods.
+		// Fetch variables from the Settings API.
+		$this->debug                  = get_option( 'simpleshib_setting-debug' );
+		$this->auto_account_provision = get_option( 'simpleshib_setting-autoprovision' );
+		$this->session_initiator_url  = get_option( 'simpleshib_setting-sessiniturl' );
+		$this->session_logout_url     = get_option( 'simpleshib_setting-sesslogouturl' );
+
+		// Replace all existing WordPress authentication methods with our Shib auth handling.
 		remove_all_filters( 'authenticate' );
-
-		// Hide password fields on profile.php and user-edit.php.
-		add_filter( 'show_password_fields', '__return_false' );
-
-		// Do not allow password resets within WP.
-		add_filter( 'allow_password_reset', '__return_false' );
-
-		// Change the lost password URL.
-		add_action( 'login_form_lostpassword', array( $this, 'lost_password' ) );
-
-		// Add our Shib auth function to WordPress's authentication workflow.
 		add_filter( 'authenticate', array( $this, 'authenticate_or_redirect' ), 10, 3 );
+
+		// Hide password fields on profile.php and user-edit.php, and do not alow resets.
+		add_filter( 'show_password_fields', '__return_false' );
+		add_filter( 'allow_password_reset', '__return_false' );
+		add_action( 'login_form_lostpassword', array( $this, 'lost_password' ) );
 
 		// Bypass the logout confirmation and redirect to $session_logout_url defined above.
 		add_action( 'login_form_logout', array( $this, 'shib_logout' ) );
@@ -120,8 +112,14 @@ class Simple_Shib {
 		// after WP is finished loading.
 		add_action( 'init', array( $this, 'validate_shib_session' ) );
 
-		// Add hooks related to the user profile page.
-		add_action( 'admin_init', array( $this, 'add_admin_hooks' ) );
+		// Add hooks related to the admin menu.
+		add_action( 'admin_menu', array( $this, 'admin_menu' ) );
+
+		// Add hooks related to the admin pages.
+		add_action( 'admin_init', array( $this, 'admin_init' ) );
+
+		// Add hooks for the Settings API.
+		add_action( 'admin_init', array( $this, 'settings_init' ) );
 	}
 
 
@@ -170,11 +168,6 @@ class Simple_Shib {
 	 * @return WP_User Returns WP_User for successful authentication, otherwise WP_Error.
 	 */
 	public function authenticate_or_redirect( $user, $username, $password ) {
-		if ( true === $this->logins_disabled ) {
-			$error_obj = new WP_Error( 'shib', 'All logins are currently disabled.' );
-			return $error_obj;
-		}
-
 		// Logged in at IdP and WP. Redirect to /.
 		// TODO: Add a setting for a custom redirect path?
 		if ( true === is_user_logged_in() && true === $this->is_shib_session_active() ) {
@@ -249,6 +242,111 @@ class Simple_Shib {
 		}
 	}
 
+	/**
+	 * Initialize plugin configuration using the WordPress Settings API.
+	 *
+	 * This is hooked on admin_init.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @see register_setting()
+	 * @see add_settings_section()
+	 * @see add_settings_field()
+	 */
+	public function settings_init() {
+		// Create a section within the new settings page created in admin_menu.
+		add_settings_section(
+			'simpleshib_settings_section_main',
+			'SSO Configuration',
+			'',
+			'simpleshib_options_page'
+		);
+
+		// Register and create the fields for: Debugging.
+		register_setting(
+			'simpleshib_settings_group',
+			'simpleshib_setting-debug',
+			array(
+				'default'           => false,
+				'description'       => 'Debug messages will be logged to the PHP error log.',
+				'sanitize_callback' => array( $this, 'sanitize_checkbox' ),
+				'show_in_rest'      => false,
+				'type'              => 'boolean',
+			)
+		);
+		add_settings_field(
+			'simpleshib_setting-debug',
+			'Debugging',
+			array( $this, 'settings_field_debug_html' ),
+			'simpleshib_options_page',
+			'simpleshib_settings_section_main',
+			array( 'label_for' => 'simpleshib_setting-debug' ),
+		);
+
+		// Register and create the fields for: Automatic account provisioning.
+		register_setting(
+			'simpleshib_settings_group',
+			'simpleshib_setting-autoprovision',
+			array(
+				'default'           => false,
+				'description'       => 'Enable to automatically create local WordPress accounts as needed. Disable to restrict access to existing local WordPress accounts only.',
+				'sanitize_callback' => array( $this, 'sanitize_checkbox' ),
+				'show_in_rest'      => false,
+				'type'              => 'boolean',
+			)
+		);
+		add_settings_field(
+			'simpleshib_setting-autoprovision',
+			'Automatic Account Provisioning',
+			array( $this, 'settings_field_autoprovision_html' ),
+			'simpleshib_options_page',
+			'simpleshib_settings_section_main',
+			array( 'label_for' => 'simpleshib_setting-autoprovision' ),
+		);
+
+		// Register and create the fields for: Session initialization URL.
+		register_setting(
+			'simpleshib_settings_group',
+			'simpleshib_setting-sessiniturl',
+			array(
+				'default'           => '/Shibboleth.sso/Login',
+				'description'       => '',
+				'sanitize_callback' => 'sanitize_text_field', // This function is built in to WP.
+				'show_in_rest'      => false,
+				'type'              => 'string',
+			)
+		);
+		add_settings_field(
+			'simpleshib_setting-sessiniturl',
+			'Shibboleth Session Initialization URL',
+			array( $this, 'settings_field_sessiniturl_html' ),
+			'simpleshib_options_page',
+			'simpleshib_settings_section_main',
+			array( 'label_for' => 'simpleshib_setting-sessiniturl' ),
+		);
+
+		// Register and create the fields for: Session logout URL.
+		register_setting(
+			'simpleshib_settings_group',
+			'simpleshib_setting-sesslogouturl',
+			array(
+				'default'           => '/Shibboleth.sso/Logout',
+				'description'       => '',
+				'sanitize_callback' => 'sanitize_text_field', // This function is built in to WP.
+				'show_in_rest'      => false,
+				'type'              => 'string',
+			)
+		);
+		add_settings_field(
+			'simpleshib_setting-sesslogouturl',
+			'Shibboleth Session Logout URL',
+			array( $this, 'settings_field_sesslogouturl_html' ),
+			'simpleshib_options_page',
+			'simpleshib_settings_section_main',
+			array( 'label_for' => 'simpleshib_setting-sesslogouturl' ),
+		);
+
+	}
 
 	/**
 	 * Generate the SSO initiator URL.
@@ -427,7 +525,7 @@ class Simple_Shib {
 	 * {@see 'admin_footer-user-edit.php'}
 	 * {@see 'personal_options_update'}
 	 */
-	public function add_admin_hooks() {
+	public function admin_init() {
 		// 'show_user_profile' fires after the "About Yourself" section when a user is editing their own profile.
 		if ( ! empty( $this->pass_change_url ) ) {
 			add_action( 'show_user_profile', array( $this, 'add_password_change_link' ) );
@@ -440,6 +538,136 @@ class Simple_Shib {
 
 		// Don't just mark the HTML form fields readonly, but handle the POST data as well.
 		add_action( 'personal_options_update', array( $this, 'disable_profile_fields_post' ) );
+	}
+
+	/**
+	 * Actions on the admin menu.
+	 *
+	 * This adds a new sub-page for SimpleShib configuration
+	 * under the "Settings" menu in the admin dashboard.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @see __construct()
+	 * {@see 'admin_menu'}
+	 * @see add_options_page()
+	 */
+	public function admin_menu() {
+		add_options_page(
+			'SimpleShib Settings',
+			'SimpleShib',
+			'manage_options',
+			'simpleshib_options_page',
+			array( $this, 'settings_page_html' ),
+			null
+		);
+	}
+
+	/**
+	 * Print the HTML on the SimpleShib settings page.
+	 *
+	 * @since 1.2.0
+	 *
+	 * {@see 'admin_menu'}
+	 * @see settings_fields()
+	 * @see do_settings_sections()
+	 * @see submit_button()
+	 */
+	public function settings_page_html() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		echo '<h1>' . esc_html( get_admin_page_title() ) . '</h1>' . "\n";
+		echo '<form method="post" action="options.php">' . "\n";
+
+		// Print the hidden form fields (wpnonce, etc).
+		settings_fields( 'simpleshib_settings_group' );
+		echo "\n";
+
+		// Print the HTML of sections and fields defined in settings_init().
+		do_settings_sections( 'simpleshib_options_page' );
+		echo "\n";
+
+		submit_button();
+		echo "\n";
+		echo '</form>' . "\n";
+	}
+
+
+	/**
+	 * Callback function to sanitize booleans values.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param mixed $input Value from submitted form.
+	 */
+	public function sanitize_checkbox( $input ) {
+		return isset( $input ) ? true : false;
+	}
+
+
+	/**
+	 * Print the HTML of the settings field for automatic account provisioning.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @see 'settings_init'
+	 */
+	public function settings_field_autoprovision_html() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		echo '<input name="simpleshib_setting-autoprovision" id="simpleshib_setting-autoprovision" type="checkbox" value="1" ' . checked( 1, get_option( 'simpleshib_setting-autoprovision' ), false ) . ' />&nbsp;Enable to automatically create local WordPress accounts as needed. Disable to restrict access to existing local WordPress accounts only.' . "\n";
+	}
+
+
+	/**
+	 * Print the HTML of the settings field for debug logging.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @see 'settings_init'
+	 */
+	public function settings_field_debug_html() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		echo '<input name="simpleshib_setting-debug" id="simpleshib_setting-debug" type="checkbox" value="1" ' . checked( 1, get_option( 'simpleshib_setting-debug' ), false ) . ' />&nbsp;Debug messages will be logged to the PHP error log.' . "\n";
+	}
+
+
+	/**
+	 * Print the HTML of the settings field for the session initialization URL.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @see 'settings_init'
+	 */
+	public function settings_field_sessiniturl_html() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		echo '<input name="simpleshib_setting-sessiniturl" id="simpleshib_setting-sessiniturl" type="text" value="' . esc_html( get_option( 'simpleshib_setting-sessiniturl' ) ) . '" />&nbsp;This typically should not be changed.' . "\n";
+	}
+
+
+	/**
+	 * Print the HTML of the settings field for debug logging.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @see 'settings_init'
+	 */
+	public function settings_field_sesslogouturl_html() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		echo '<input name="simpleshib_setting-sesslogouturl" id="simpleshib_setting-sesslogouturl" type="text" value="' . esc_html( get_option( 'simpleshib_setting-sesslogouturl' ) ) . '" />&nbsp;This typically should not be changed.' . "\n";
 	}
 
 
@@ -533,6 +761,5 @@ class Simple_Shib {
 			}
 		);
 	}
-
 
 }

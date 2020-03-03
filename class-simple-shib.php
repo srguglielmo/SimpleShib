@@ -124,7 +124,11 @@ class Simple_Shib {
 		// Add hooks for the admin pages and Settings API.
 		add_action( 'admin_init', array( $this, 'admin_init' ) );
 		add_action( 'admin_init', array( $this, 'settings_init' ) );
-		add_action( 'admin_menu', array( $this, 'admin_menu' ) );
+		if ( true === is_multisite() ) {
+			add_action( 'network_admin_menu', array( $this, 'admin_menu' ) );
+		} else {
+			add_action( 'admin_menu', array( $this, 'admin_menu' ) );
+		}
 
 		// Hide password fields on profile.php and user-edit.php, and do not alow resets.
 		add_filter( 'show_password_fields', '__return_false' );

@@ -110,14 +110,6 @@ class Simple_Shib {
 			remove_all_filters( 'authenticate' );
 			add_filter( 'authenticate', array( $this, 'authenticate_or_redirect' ), 10, 3 );
 
-			// Hide password fields on profile.php and user-edit.php, and do not alow resets.
-			add_filter( 'show_password_fields', '__return_false' );
-			add_filter( 'allow_password_reset', '__return_false' );
-			add_action( 'login_form_lostpassword', array( $this, 'lost_password' ) );
-
-			// Bypass the logout confirmation and redirect to $session_logout_url defined above.
-			add_action( 'login_form_logout', array( $this, 'shib_logout' ) );
-
 			// Check for IdP sessions that have disappeared.
 			// The init hooks fire when WP is finished loading on every page, but before
 			// headers are sent. We have to run validate_shib_session() in the init hook
@@ -125,13 +117,19 @@ class Simple_Shib {
 			// after WP is finished loading.
 			add_action( 'init', array( $this, 'validate_shib_session' ) );
 
-			// Add hooks related to the admin pages.
-			add_action( 'admin_init', array( $this, 'admin_init' ) );
+			// Bypass the logout confirmation and redirect to $session_logout_url defined above.
+			add_action( 'login_form_logout', array( $this, 'shib_logout' ) );
 		}
 
-		// Add hooks for the Settings API.
+		// Add hooks for the admin pages and Settings API.
+		add_action( 'admin_init', array( $this, 'admin_init' ) );
 		add_action( 'admin_init', array( $this, 'settings_init' ) );
 		add_action( 'admin_menu', array( $this, 'admin_menu' ) );
+
+		// Hide password fields on profile.php and user-edit.php, and do not alow resets.
+		add_filter( 'show_password_fields', '__return_false' );
+		add_filter( 'allow_password_reset', '__return_false' );
+		add_action( 'login_form_lostpassword', array( $this, 'lost_password' ) );
 	}
 
 

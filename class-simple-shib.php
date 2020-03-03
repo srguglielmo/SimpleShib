@@ -265,18 +265,32 @@ class Simple_Shib {
 	 * @see add_settings_field()
 	 */
 	public function settings_init() {
-		// Create sections within the new settings page created in admin_menu.
+		// Create a new section within the new settings page created in admin_menu.
 		add_settings_section(
-			'simpleshib_settings_section_functionality',
-			'Enable/Disable Functionality',
+			'simpleshib_settings_section_main',
+			'Configuration',
 			'',
 			'simpleshib_options_page'
 		);
-		add_settings_section(
+
+		// Register and create the fields for: Enabled.
+		register_setting(
+			'simpleshib_settings_group',
+			'simpleshib_setting-enabled',
+			array(
+				'default'           => false,
+				'sanitize_callback' => array( $this, 'sanitize_checkbox' ),
+				'show_in_rest'      => false,
+				'type'              => 'boolean',
+			)
+		);
+		add_settings_field(
+			'simpleshib_setting-enabled',
+			'Authentication Hooks',
+			array( $this, 'settings_field_enabled_html' ),
+			'simpleshib_options_page',
 			'simpleshib_settings_section_main',
-			'Main Configuration',
-			'',
-			'simpleshib_options_page'
+			array( 'label_for' => 'simpleshib_setting-enabled' ),
 		);
 
 		// Register and create the fields for: Automatic account provisioning.
@@ -317,26 +331,6 @@ class Simple_Shib {
 			'simpleshib_options_page',
 			'simpleshib_settings_section_main',
 			array( 'label_for' => 'simpleshib_setting-debug' ),
-		);
-
-		// Register and create the fields for: Enabled.
-		register_setting(
-			'simpleshib_settings_group',
-			'simpleshib_setting-enabled',
-			array(
-				'default'           => false,
-				'sanitize_callback' => array( $this, 'sanitize_checkbox' ),
-				'show_in_rest'      => false,
-				'type'              => 'boolean',
-			)
-		);
-		add_settings_field(
-			'simpleshib_setting-enabled',
-			'Authentication Hooks',
-			array( $this, 'settings_field_enabled_html' ),
-			'simpleshib_options_page',
-			'simpleshib_settings_section_functionality',
-			array( 'label_for' => 'simpleshib_setting-enabled' ),
 		);
 
 		// Register and create the fields for: Lost Pass URL.
@@ -718,7 +712,7 @@ class Simple_Shib {
 			return;
 		}
 
-		echo '<input name="simpleshib_setting-enabled" id="simpleshib_setting-enabled" type="checkbox" value="1" ' . checked( 1, get_option( 'simpleshib_setting-enabled' ), false ) . ' />&nbsp;Enable this option to use SSO for user authentication. Ensure the settings below are correct before enabling, otherwise you may be locked out!' . "\n";
+		echo '<input name="simpleshib_setting-enabled" id="simpleshib_setting-enabled" type="checkbox" value="1" ' . checked( 1, get_option( 'simpleshib_setting-enabled' ), false ) . ' />&nbsp;Enable to use SSO for user authentication. Ensure the settings below are correct before enabling, otherwise you may be locked out! If disabled, local WordPress accounts will be used.' . "\n";
 	}
 
 

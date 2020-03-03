@@ -38,6 +38,14 @@ class Simple_Shib {
 	private $auto_account_provision;
 
 	/**
+	 * Enable functionality of this plugin.
+	 *
+	 * @since 1.2.0
+	 * @var bool $enabled
+	 */
+	private $enabled;
+
+	/**
 	 * Session initiator URL. The URL to initiate the session at the IdP. The user will be
 	 * redirected here upon login. This should typically be "/Shibboleth.sso/Login" to ensure
 	 * the SP on your server handles the request.
@@ -88,37 +96,38 @@ class Simple_Shib {
 	 */
 	public function __construct() {
 		// Fetch variables from the Settings API.
-		$this->debug                  = get_option( 'simpleshib_setting-debug' );
 		$this->auto_account_provision = get_option( 'simpleshib_setting-autoprovision' );
+		$this->debug                  = get_option( 'simpleshib_setting-debug' );
+		$this->enabled                = get_option( 'simpleshib_setting-enabled' );
 		$this->session_initiator_url  = get_option( 'simpleshib_setting-sessiniturl' );
 		$this->session_logout_url     = get_option( 'simpleshib_setting-sesslogouturl' );
 
-		// Replace all existing WordPress authentication methods with our Shib auth handling.
-		remove_all_filters( 'authenticate' );
-		add_filter( 'authenticate', array( $this, 'authenticate_or_redirect' ), 10, 3 );
+		if ( true === $this->enabled ) {
+			// Replace all existing WordPress authentication methods with our Shib auth handling.
+			remove_all_filters( 'authenticate' );
+			add_filter( 'authenticate', array( $this, 'authenticate_or_redirect' ), 10, 3 );
 
-		// Hide password fields on profile.php and user-edit.php, and do not alow resets.
-		add_filter( 'show_password_fields', '__return_false' );
-		add_filter( 'allow_password_reset', '__return_false' );
-		add_action( 'login_form_lostpassword', array( $this, 'lost_password' ) );
+			// Hide password fields on profile.php and user-edit.php, and do not alow resets.
+			add_filter( 'show_password_fields', '__return_false' );
+			add_filter( 'allow_password_reset', '__return_false' );
+			add_action( 'login_form_lostpassword', array( $this, 'lost_password' ) );
 
-		// Bypass the logout confirmation and redirect to $session_logout_url defined above.
-		add_action( 'login_form_logout', array( $this, 'shib_logout' ) );
+			// Bypass the logout confirmation and redirect to $session_logout_url defined above.
+			add_action( 'login_form_logout', array( $this, 'shib_logout' ) );
 
-		// Check for IdP sessions that have disappeared.
-		// The init hooks fire when WP is finished loading on every page, but before
-		// headers are sent. We have to run validate_shib_session() in the init hook
-		// instead of in the plugin construct because is_user_logged_in() only works
-		// after WP is finished loading.
-		add_action( 'init', array( $this, 'validate_shib_session' ) );
+			// Check for IdP sessions that have disappeared.
+			// The init hooks fire when WP is finished loading on every page, but before
+			// headers are sent. We have to run validate_shib_session() in the init hook
+			// instead of in the plugin construct because is_user_logged_in() only works
+			// after WP is finished loading.
+			add_action( 'init', array( $this, 'validate_shib_session' ) );
 
-		// Add hooks related to the admin menu.
-		add_action( 'admin_menu', array( $this, 'admin_menu' ) );
-
-		// Add hooks related to the admin pages.
-		add_action( 'admin_init', array( $this, 'admin_init' ) );
+			// Add hooks related to the admin pages.
+			add_action( 'admin_init', array( $this, 'admin_init' ) );
+		}
 
 		// Add hooks for the Settings API.
+		add_action( 'admin_menu', array( $this, 'admin_menu' ) );
 		add_action( 'admin_init', array( $this, 'settings_init' ) );
 	}
 
@@ -260,6 +269,27 @@ class Simple_Shib {
 			'SSO Configuration',
 			'',
 			'simpleshib_options_page'
+		);
+
+		// Register and create the fields for: Enabled.
+		register_setting(
+			'simpleshib_settings_group',
+			'simpleshib_setting-enabled',
+			array(
+				'default'           => false,
+				'description'       => 'Enable plugin functionality.',
+				'sanitize_callback' => array( $this, 'sanitize_checkbox' ),
+				'show_in_rest'      => false,
+				'type'              => 'boolean',
+			)
+		);
+		add_settings_field(
+			'simpleshib_setting-enabled',
+			'SSO Enabled',
+			array( $this, 'settings_field_enabled_html' ),
+			'simpleshib_options_page',
+			'simpleshib_settings_section_main',
+			array( 'label_for' => 'simpleshib_setting-enabled' ),
 		);
 
 		// Register and create the fields for: Debugging.
@@ -613,6 +643,22 @@ class Simple_Shib {
 	 * @since 1.2.0
 	 *
 	 * @see 'settings_init'
+	 */
+	public function settings_field_enabled_html() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		echo '<input name="simpleshib_setting-enabled" id="simpleshib_setting-enabled" type="checkbox" value="1" ' . checked( 1, get_option( 'simpleshib_setting-enabled' ), false ) . ' />&nbsp;Enable or disable the SSO functionality of this plugin.' . "\n";
+	}
+
+
+	/**
+	 * Print the HTML of the settings field for automatic account provisioning.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @see settings_init()
 	 */
 	public function settings_field_autoprovision_html() {
 		if ( ! current_user_can( 'manage_options' ) ) {

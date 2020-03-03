@@ -75,6 +75,9 @@ See the `LICENSE` file for full details.
 
 == Changelog ==
 
+= 1.2.1 =
+* Correct syntax error.
+
 = 1.2.0 =
 * Compatibility with WordPress 5.3.
 * Move configuration into the WordPress Settings API.

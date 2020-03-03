@@ -290,7 +290,7 @@ class Simple_Shib {
 			array( $this, 'settings_field_enabled_html' ),
 			'simpleshib_options_page',
 			'simpleshib_settings_section_main',
-			array( 'label_for' => 'simpleshib_setting-enabled' ),
+			array( 'label_for' => 'simpleshib_setting-enabled' )
 		);
 
 		// Register and create the fields for: Automatic account provisioning.
@@ -310,7 +310,7 @@ class Simple_Shib {
 			array( $this, 'settings_field_autoprovision_html' ),
 			'simpleshib_options_page',
 			'simpleshib_settings_section_main',
-			array( 'label_for' => 'simpleshib_setting-autoprovision' ),
+			array( 'label_for' => 'simpleshib_setting-autoprovision' )
 		);
 
 		// Register and create the fields for: Debugging.
@@ -330,7 +330,7 @@ class Simple_Shib {
 			array( $this, 'settings_field_debug_html' ),
 			'simpleshib_options_page',
 			'simpleshib_settings_section_main',
-			array( 'label_for' => 'simpleshib_setting-debug' ),
+			array( 'label_for' => 'simpleshib_setting-debug' )
 		);
 
 		// Register and create the fields for: Lost Pass URL.
@@ -350,7 +350,7 @@ class Simple_Shib {
 			array( $this, 'settings_field_lostpassurl_html' ),
 			'simpleshib_options_page',
 			'simpleshib_settings_section_main',
-			array( 'label_for' => 'simpleshib_setting-lostpassurl' ),
+			array( 'label_for' => 'simpleshib_setting-lostpassurl' )
 		);
 
 		// Register and create the fields for: Password Change URL.
@@ -370,7 +370,7 @@ class Simple_Shib {
 			array( $this, 'settings_field_passchangeurl_html' ),
 			'simpleshib_options_page',
 			'simpleshib_settings_section_main',
-			array( 'label_for' => 'simpleshib_setting-passchangeurl' ),
+			array( 'label_for' => 'simpleshib_setting-passchangeurl' )
 		);
 
 		// Register and create the fields for: Session initialization URL.
@@ -390,7 +390,7 @@ class Simple_Shib {
 			array( $this, 'settings_field_sessiniturl_html' ),
 			'simpleshib_options_page',
 			'simpleshib_settings_section_main',
-			array( 'label_for' => 'simpleshib_setting-sessiniturl' ),
+			array( 'label_for' => 'simpleshib_setting-sessiniturl' )
 		);
 
 		// Register and create the fields for: Session logout URL.
@@ -410,7 +410,7 @@ class Simple_Shib {
 			array( $this, 'settings_field_sesslogouturl_html' ),
 			'simpleshib_options_page',
 			'simpleshib_settings_section_main',
-			array( 'label_for' => 'simpleshib_setting-sesslogouturl' ),
+			array( 'label_for' => 'simpleshib_setting-sesslogouturl' )
 		);
 
 	}

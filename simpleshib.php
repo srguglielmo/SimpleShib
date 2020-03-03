@@ -3,7 +3,7 @@
  * Plugin Name: SimpleShib
  * Plugin URI: https://wordpress.org/plugins/simpleshib/
  * Description: User authentication via Shibboleth Single Sign-On.
- * Version: 1.2.0
+ * Version: 1.2.1
  * Author: Steve Guglielmo
  * License: MIT
  * Network: true

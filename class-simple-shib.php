@@ -51,7 +51,7 @@ class Simple_Shib {
 	 * @since 1.0.0
 	 * @var string $lost_pass_url
 	 */
-	private $lost_pass_url = 'https://example.com/accounts';
+	private $lost_pass_url;
 
 	/**
 	 * Password change URL. The "change password" link in WordPress will point to this URL.
@@ -60,7 +60,7 @@ class Simple_Shib {
 	 * @since 1.0.0
 	 * @var string $pass_change_url
 	 */
-	private $pass_change_url = 'https://example.com/accounts';
+	private $pass_change_url;
 
 	/**
 	 * Session initiator URL. The URL to initiate the session at the IdP. The user will be
@@ -265,10 +265,16 @@ class Simple_Shib {
 	 * @see add_settings_field()
 	 */
 	public function settings_init() {
-		// Create a section within the new settings page created in admin_menu.
+		// Create sections within the new settings page created in admin_menu.
+		add_settings_section(
+			'simpleshib_settings_section_functionality',
+			'Enable/Disable Functionality',
+			'',
+			'simpleshib_options_page'
+		);
 		add_settings_section(
 			'simpleshib_settings_section_main',
-			'SSO Configuration',
+			'Main Configuration',
 			'',
 			'simpleshib_options_page'
 		);
@@ -326,11 +332,51 @@ class Simple_Shib {
 		);
 		add_settings_field(
 			'simpleshib_setting-enabled',
-			'SSO Enabled',
+			'Authentication Hooks',
 			array( $this, 'settings_field_enabled_html' ),
 			'simpleshib_options_page',
-			'simpleshib_settings_section_main',
+			'simpleshib_settings_section_functionality',
 			array( 'label_for' => 'simpleshib_setting-enabled' ),
+		);
+
+		// Register and create the fields for: Lost Pass URL.
+		register_setting(
+			'simpleshib_settings_group',
+			'simpleshib_setting-lostpassurl',
+			array(
+				'default'           => 'https://example.com/reset_password',
+				'sanitize_callback' => 'sanitize_text_field', // This function is built in to WP.
+				'show_in_rest'      => false,
+				'type'              => 'string',
+			)
+		);
+		add_settings_field(
+			'simpleshib_setting-lostpassurl',
+			'Lost Password URL',
+			array( $this, 'settings_field_lostpassurl_html' ),
+			'simpleshib_options_page',
+			'simpleshib_settings_section_main',
+			array( 'label_for' => 'simpleshib_setting-lostpassurl' ),
+		);
+
+		// Register and create the fields for: Password Change URL.
+		register_setting(
+			'simpleshib_settings_group',
+			'simpleshib_setting-passchangeurl',
+			array(
+				'default'           => 'https://example.com/change_password',
+				'sanitize_callback' => 'sanitize_text_field', // This function is built in to WP.
+				'show_in_rest'      => false,
+				'type'              => 'string',
+			)
+		);
+		add_settings_field(
+			'simpleshib_setting-passchangeurl',
+			'Password Change URL',
+			array( $this, 'settings_field_passchangeurl_html' ),
+			'simpleshib_options_page',
+			'simpleshib_settings_section_main',
+			array( 'label_for' => 'simpleshib_setting-passchangeurl' ),
 		);
 
 		// Register and create the fields for: Session initialization URL.
@@ -640,7 +686,7 @@ class Simple_Shib {
 			return;
 		}
 
-		echo '<input name="simpleshib_setting-autoprovision" id="simpleshib_setting-autoprovision" type="checkbox" value="1" ' . checked( 1, get_option( 'simpleshib_setting-autoprovision' ), false ) . ' />&nbsp;Enable to automatically create local WordPress accounts upon SSO login. Disable to restrict access to preexisting local WordPress accounts.' . "\n";
+		echo '<input name="simpleshib_setting-autoprovision" id="simpleshib_setting-autoprovision" type="checkbox" value="1" ' . checked( 1, get_option( 'simpleshib_setting-autoprovision' ), false ) . ' />&nbsp;Automatically create local WordPress accounts upon SSO login. Disable this to restrict access to preexisting local WordPress accounts.' . "\n";
 	}
 
 
@@ -672,7 +718,39 @@ class Simple_Shib {
 			return;
 		}
 
-		echo '<input name="simpleshib_setting-enabled" id="simpleshib_setting-enabled" type="checkbox" value="1" ' . checked( 1, get_option( 'simpleshib_setting-enabled' ), false ) . ' />&nbsp;Enable or disable the SSO functionality of this plugin.' . "\n";
+		echo '<input name="simpleshib_setting-enabled" id="simpleshib_setting-enabled" type="checkbox" value="1" ' . checked( 1, get_option( 'simpleshib_setting-enabled' ), false ) . ' />&nbsp;Enable this option to use SSO for user authentication. Ensure the settings below are correct before enabling, otherwise you may be locked out!' . "\n";
+	}
+
+
+	/**
+	 * Print the HTML of the settings field for the Lost Password URL.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @see settings_init()
+	 */
+	public function settings_field_lostpassurl_html() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		echo '<input name="simpleshib_setting-lostpassurl" id="simpleshib_setting-lostpassurl" type="text" required size="50" maxlength="150" value="' . esc_html( get_option( 'simpleshib_setting-lostpassurl' ) ) . '" />&nbsp;Full URL where users can reset their SSO password.' . "\n";
+	}
+
+
+	/**
+	 * Print the HTML of the settings field for the Password Change URL.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @see settings_init()
+	 */
+	public function settings_field_passchangeurl_html() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		echo '<input name="simpleshib_setting-passchangeurl" id="simpleshib_setting-passchangeurl" type="text" required size="50" maxlength="150" value="' . esc_html( get_option( 'simpleshib_setting-passchangeurl' ) ) . '" />&nbsp;Full URL where users can change their SSO password.' . "\n";
 	}
 
 
@@ -688,7 +766,7 @@ class Simple_Shib {
 			return;
 		}
 
-		echo '<input name="simpleshib_setting-sessiniturl" id="simpleshib_setting-sessiniturl" type="text" value="' . esc_html( get_option( 'simpleshib_setting-sessiniturl' ) ) . '" />&nbsp;This typically should not be changed.' . "\n";
+		echo '<input name="simpleshib_setting-sessiniturl" id="simpleshib_setting-sessiniturl" type="text" required size="50" maxlength="150" value="' . esc_html( get_option( 'simpleshib_setting-sessiniturl' ) ) . '" />&nbsp;This typically should not be changed.' . "\n";
 	}
 
 
@@ -704,7 +782,7 @@ class Simple_Shib {
 			return;
 		}
 
-		echo '<input name="simpleshib_setting-sesslogouturl" id="simpleshib_setting-sesslogouturl" type="text" value="' . esc_html( get_option( 'simpleshib_setting-sesslogouturl' ) ) . '" />&nbsp;This typically should not be changed, but an optional return URL can be provided. E.g. <code>/Shibboleth.sso/Logout?return=https://idp.example.com/idp/profile/Logout</code>' . "\n";
+		echo '<input name="simpleshib_setting-sesslogouturl" id="simpleshib_setting-sesslogouturl" type="text" required size="50" maxlength="150" value="' . esc_html( get_option( 'simpleshib_setting-sesslogouturl' ) ) . '" />&nbsp;This typically should not be changed, but an optional return URL can be provided. E.g. <code>/Shibboleth.sso/Logout?return=https://idp.example.com/idp/profile/Logout</code>.' . "\n";
 	}
 
 

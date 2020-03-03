@@ -19,14 +19,6 @@
  */
 class Simple_Shib {
 	/**
-	 * Debugging. If true, print debugging messages to the PHP error log.
-	 *
-	 * @since 1.0.0
-	 * @var bool $debug
-	 */
-	private $debug;
-
-	/**
 	 * Automatic account provisioning. When enabled, anyone with valid credentials at
 	 * the IdP can login to WordPress. If they do not have a local WordPress account, one
 	 * will be created for them. When the setting is disabled, the login process will fail
@@ -38,12 +30,37 @@ class Simple_Shib {
 	private $auto_account_provision;
 
 	/**
+	 * Debugging. If true, print debugging messages to the PHP error log.
+	 *
+	 * @since 1.0.0
+	 * @var bool $debug
+	 */
+	private $debug;
+
+	/**
 	 * Enable functionality of this plugin.
 	 *
 	 * @since 1.2.0
 	 * @var bool $enabled
 	 */
 	private $enabled;
+
+	/**
+	 * Lost password URL. Password reset requests will point to this URL.
+	 *
+	 * @since 1.0.0
+	 * @var string $lost_pass_url
+	 */
+	private $lost_pass_url = 'https://example.com/accounts';
+
+	/**
+	 * Password change URL. The "change password" link in WordPress will point to this URL.
+	 * Set to an empty string to disable/hide the link entirely.
+	 *
+	 * @since 1.0.0
+	 * @var string $pass_change_url
+	 */
+	private $pass_change_url = 'https://example.com/accounts';
 
 	/**
 	 * Session initiator URL. The URL to initiate the session at the IdP. The user will be
@@ -65,24 +82,6 @@ class Simple_Shib {
 	 * @var string $session_logout_url
 	 */
 	private $session_logout_url;
-
-	/**
-	 * Password change URL. The "change password" link in WordPress will point to this URL.
-	 * Set to an empty string to disable/hide the link entirely.
-	 *
-	 * @since 1.0.0
-	 * @var string $pass_change_url
-	 */
-	private $pass_change_url = 'http://example.com/accounts';
-
-	/**
-	 * Lost password URL. Password reset requests will point to this URL.
-	 * This is required and cannot be an empty string.
-	 *
-	 * @since 1.0.0
-	 * @var string $lost_pass_url
-	 */
-	private $lost_pass_url = 'http://example.com/accounts';
 
 	/**
 	 * Construct method.
@@ -131,29 +130,8 @@ class Simple_Shib {
 		}
 
 		// Add hooks for the Settings API.
-		add_action( 'admin_menu', array( $this, 'admin_menu' ) );
 		add_action( 'admin_init', array( $this, 'settings_init' ) );
-	}
-
-
-	/**
-	 * Lost password.
-	 *
-	 * This method redirects the user to the URL defined in the settings above.
-	 * It is hooked on 'login_form_lostpassword'.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @see wp_redirect()
-	 */
-	public function lost_password() {
-		// wp_safe_redirect() is not used here because $lost_pass_url is set
-		// in the plugin configuration (not provided by the user) and is likely
-		// an external URL. The phpcs sniff is disabled to avoid a warning.
-		// phpcs:disable WordPress.Security.SafeRedirect.wp_redirect_wp_redirect
-		wp_redirect( $this->lost_pass_url );
-		// phpcs:enable
-		exit();
+		add_action( 'admin_menu', array( $this, 'admin_menu' ) );
 	}
 
 
@@ -227,30 +205,55 @@ class Simple_Shib {
 
 
 	/**
-	 * Validate Shibboleth IdP session.
+	 * Add hooks to the admin sections.
 	 *
-	 * This method determines if a Shibboleth session is active at the IdP by checking
-	 * for the shibboleth HTTP headers. These headers cannot be forged because they are
-	 * generated locally by shibd via Apache's mod_shib. For example, if the user attempts
-	 * to spoof the "mail" header, it shows up as HTTP_MAIL instead of "mail".
+	 * This method adds several hooks that change the user profile edit page.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return bool True if the IdP session is active, otherwise false.
+	 * @see add_action()
+	 * {@see 'show_user_profile'}
+	 * {@see 'admin_footer-profile.php'}
+	 * {@see 'admin_footer-user-edit.php'}
+	 * {@see 'personal_options_update'}
 	 */
-	private function is_shib_session_active() {
-		if ( isset( $_SERVER['AUTH_TYPE'] ) && 'shibboleth' === $_SERVER['AUTH_TYPE']
-			&& ! empty( $_SERVER['Shib-Session-ID'] )
-			&& ! empty( $_SERVER['uid'] )
-			&& ! empty( $_SERVER['givenName'] )
-			&& ! empty( $_SERVER['sn'] )
-			&& ! empty( $_SERVER['mail'] )
-		) {
-			return true;
-		} else {
-			return false;
+	public function admin_init() {
+		// 'show_user_profile' fires after the "About Yourself" section when a user is editing their own profile.
+		if ( ! empty( $this->pass_change_url ) ) {
+			add_action( 'show_user_profile', array( $this, 'add_password_change_link' ) );
 		}
+
+		// Run a hook to disable certain HTML form fields on when editing your own profile and for admins
+		// editing other users' profiles.
+		add_action( 'admin_footer-profile.php', array( $this, 'disable_profile_fields' ) );
+		add_action( 'admin_footer-user-edit.php', array( $this, 'disable_profile_fields' ) );
+
+		// Don't just mark the HTML form fields readonly, but handle the POST data as well.
+		add_action( 'personal_options_update', array( $this, 'disable_profile_fields_post' ) );
 	}
+
+
+	/**
+	 * Actions on the admin menu.
+	 *
+	 * This adds a new sub-page for SimpleShib configuration
+	 * under the "Settings" menu in the admin dashboard.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @see add_options_page()
+	 */
+	public function admin_menu() {
+		add_options_page(
+			'SimpleShib Settings',
+			'SimpleShib',
+			'manage_options',
+			'simpleshib_options_page',
+			array( $this, 'settings_page_html' ),
+			null
+		);
+	}
+
 
 	/**
 	 * Initialize plugin configuration using the WordPress Settings API.
@@ -272,25 +275,25 @@ class Simple_Shib {
 			'simpleshib_options_page'
 		);
 
-		// Register and create the fields for: Enabled.
+		// Register and create the fields for: Automatic account provisioning.
 		register_setting(
 			'simpleshib_settings_group',
-			'simpleshib_setting-enabled',
+			'simpleshib_setting-autoprovision',
 			array(
 				'default'           => false,
-				'description'       => 'Enable plugin functionality.',
+				'description'       => 'Enable to automatically create local WordPress accounts as needed. Disable to restrict access to existing local WordPress accounts only.',
 				'sanitize_callback' => array( $this, 'sanitize_checkbox' ),
 				'show_in_rest'      => false,
 				'type'              => 'boolean',
 			)
 		);
 		add_settings_field(
-			'simpleshib_setting-enabled',
-			'SSO Enabled',
-			array( $this, 'settings_field_enabled_html' ),
+			'simpleshib_setting-autoprovision',
+			'Automatic Account Provisioning',
+			array( $this, 'settings_field_autoprovision_html' ),
 			'simpleshib_options_page',
 			'simpleshib_settings_section_main',
-			array( 'label_for' => 'simpleshib_setting-enabled' ),
+			array( 'label_for' => 'simpleshib_setting-autoprovision' ),
 		);
 
 		// Register and create the fields for: Debugging.
@@ -314,25 +317,25 @@ class Simple_Shib {
 			array( 'label_for' => 'simpleshib_setting-debug' ),
 		);
 
-		// Register and create the fields for: Automatic account provisioning.
+		// Register and create the fields for: Enabled.
 		register_setting(
 			'simpleshib_settings_group',
-			'simpleshib_setting-autoprovision',
+			'simpleshib_setting-enabled',
 			array(
 				'default'           => false,
-				'description'       => 'Enable to automatically create local WordPress accounts as needed. Disable to restrict access to existing local WordPress accounts only.',
+				'description'       => 'Enable plugin functionality.',
 				'sanitize_callback' => array( $this, 'sanitize_checkbox' ),
 				'show_in_rest'      => false,
 				'type'              => 'boolean',
 			)
 		);
 		add_settings_field(
-			'simpleshib_setting-autoprovision',
-			'Automatic Account Provisioning',
-			array( $this, 'settings_field_autoprovision_html' ),
+			'simpleshib_setting-enabled',
+			'SSO Enabled',
+			array( $this, 'settings_field_enabled_html' ),
 			'simpleshib_options_page',
 			'simpleshib_settings_section_main',
-			array( 'label_for' => 'simpleshib_setting-autoprovision' ),
+			array( 'label_for' => 'simpleshib_setting-enabled' ),
 		);
 
 		// Register and create the fields for: Session initialization URL.
@@ -378,6 +381,64 @@ class Simple_Shib {
 		);
 
 	}
+
+
+	/**
+	 * Validate Shibboleth IdP session.
+	 *
+	 * This method determines if a Shibboleth session is active at the IdP by checking
+	 * for the shibboleth HTTP headers. These headers cannot be forged because they are
+	 * generated locally by shibd via Apache's mod_shib. For example, if the user attempts
+	 * to spoof the "mail" header, it shows up as HTTP_MAIL instead of "mail".
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return bool True if the IdP session is active, otherwise false.
+	 */
+	private function is_shib_session_active() {
+		if ( isset( $_SERVER['AUTH_TYPE'] ) && 'shibboleth' === $_SERVER['AUTH_TYPE']
+			&& ! empty( $_SERVER['Shib-Session-ID'] )
+			&& ! empty( $_SERVER['uid'] )
+			&& ! empty( $_SERVER['givenName'] )
+			&& ! empty( $_SERVER['sn'] )
+			&& ! empty( $_SERVER['mail'] )
+		) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+
+	/**
+	 * Validate the Shibboleth IdP session
+	 *
+	 * This method validates the Shibboleth login session at the IdP.
+	 * If the IdP's session disappears while the user is logged into WordPress
+	 * locally, this will log them out.
+	 * It is hooked on 'init'.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @see is_user_logged_in()
+	 * @see is_shib_session_active()
+	 * @see wp_logout()
+	 * @see wp_safe_redirect()
+	 */
+	public function validate_shib_session() {
+		if ( true === is_user_logged_in() && false === $this->is_shib_session_active() ) {
+			if ( $this->debug ) {
+				// phpcs:disable WordPress.PHP.DevelopmentFunctions.error_log_error_log
+				error_log( 'Shibboleth Debug: validate_shib_session(): Logged in at WP but not IdP. Logging out!' );
+				// phpcs:enable
+			}
+
+			wp_logout();
+			wp_safe_redirect( '/' );
+			exit();
+		}
+	}
+
 
 	/**
 	 * Generate the SSO initiator URL.
@@ -509,83 +570,39 @@ class Simple_Shib {
 
 
 	/**
-	 * Validate the Shibboleth IdP session
+	 * Lost password.
 	 *
-	 * This method validates the Shibboleth login session at the IdP.
-	 * If the IdP's session disappears while the user is logged into WordPress
-	 * locally, this will log them out.
-	 * It is hooked on 'init'.
+	 * This method redirects the user to the URL defined in the settings above.
+	 * It is hooked on 'login_form_lostpassword'.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @see is_user_logged_in()
-	 * @see is_shib_session_active()
-	 * @see wp_logout()
-	 * @see wp_safe_redirect()
+	 * @see wp_redirect()
 	 */
-	public function validate_shib_session() {
-		if ( true === is_user_logged_in() && false === $this->is_shib_session_active() ) {
-			if ( $this->debug ) {
-				// phpcs:disable WordPress.PHP.DevelopmentFunctions.error_log_error_log
-				error_log( 'Shibboleth Debug: validate_shib_session(): Logged in at WP but not IdP. Logging out!' );
-				// phpcs:enable
-			}
-
-			wp_logout();
-			wp_safe_redirect( '/' );
-			exit();
-		}
+	public function lost_password() {
+		// wp_safe_redirect() is not used here because $lost_pass_url is set
+		// in the plugin configuration (not provided by the user) and is likely
+		// an external URL. The phpcs sniff is disabled to avoid a warning.
+		// phpcs:disable WordPress.Security.SafeRedirect.wp_redirect_wp_redirect
+		wp_redirect( $this->lost_pass_url );
+		// phpcs:enable
+		exit();
 	}
 
 
 	/**
-	 * Add hooks to the admin sections.
-	 *
-	 * This method adds several hooks that change the user profile edit page.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @see add_action()
-	 * {@see 'show_user_profile'}
-	 * {@see 'admin_footer-profile.php'}
-	 * {@see 'admin_footer-user-edit.php'}
-	 * {@see 'personal_options_update'}
-	 */
-	public function admin_init() {
-		// 'show_user_profile' fires after the "About Yourself" section when a user is editing their own profile.
-		if ( ! empty( $this->pass_change_url ) ) {
-			add_action( 'show_user_profile', array( $this, 'add_password_change_link' ) );
-		}
-
-		// Run a hook to disable certain HTML form fields on when editing your own profile and for admins
-		// editing other users' profiles.
-		add_action( 'admin_footer-profile.php', array( $this, 'disable_profile_fields' ) );
-		add_action( 'admin_footer-user-edit.php', array( $this, 'disable_profile_fields' ) );
-
-		// Don't just mark the HTML form fields readonly, but handle the POST data as well.
-		add_action( 'personal_options_update', array( $this, 'disable_profile_fields_post' ) );
-	}
-
-	/**
-	 * Actions on the admin menu.
-	 *
-	 * This adds a new sub-page for SimpleShib configuration
-	 * under the "Settings" menu in the admin dashboard.
+	 * Callback function to sanitize booleans values.
 	 *
 	 * @since 1.2.0
 	 *
-	 * @see add_options_page()
+	 * @param mixed $input Value from submitted form.
+	 *
+	 * @return boolean True or false.
 	 */
-	public function admin_menu() {
-		add_options_page(
-			'SimpleShib Settings',
-			'SimpleShib',
-			'manage_options',
-			'simpleshib_options_page',
-			array( $this, 'settings_page_html' ),
-			null
-		);
+	public function sanitize_checkbox( $input ) {
+		return isset( $input ) ? true : false;
 	}
+
 
 	/**
 	 * Print the HTML on the SimpleShib settings page.
@@ -619,36 +636,6 @@ class Simple_Shib {
 
 
 	/**
-	 * Callback function to sanitize booleans values.
-	 *
-	 * @since 1.2.0
-	 *
-	 * @param mixed $input Value from submitted form.
-	 *
-	 * @return boolean True or false.
-	 */
-	public function sanitize_checkbox( $input ) {
-		return isset( $input ) ? true : false;
-	}
-
-
-	/**
-	 * Print the HTML of the settings field for enabled/disabled.
-	 *
-	 * @since 1.2.0
-	 *
-	 * @see 'settings_init'
-	 */
-	public function settings_field_enabled_html() {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			return;
-		}
-
-		echo '<input name="simpleshib_setting-enabled" id="simpleshib_setting-enabled" type="checkbox" value="1" ' . checked( 1, get_option( 'simpleshib_setting-enabled' ), false ) . ' />&nbsp;Enable or disable the SSO functionality of this plugin.' . "\n";
-	}
-
-
-	/**
 	 * Print the HTML of the settings field for automatic account provisioning.
 	 *
 	 * @since 1.2.0
@@ -677,6 +664,22 @@ class Simple_Shib {
 		}
 
 		echo '<input name="simpleshib_setting-debug" id="simpleshib_setting-debug" type="checkbox" value="1" ' . checked( 1, get_option( 'simpleshib_setting-debug' ), false ) . ' />&nbsp;Debug messages will be logged to the PHP error log.' . "\n";
+	}
+
+
+	/**
+	 * Print the HTML of the settings field for enabled/disabled.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @see 'settings_init'
+	 */
+	public function settings_field_enabled_html() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		echo '<input name="simpleshib_setting-enabled" id="simpleshib_setting-enabled" type="checkbox" value="1" ' . checked( 1, get_option( 'simpleshib_setting-enabled' ), false ) . ' />&nbsp;Enable or disable the SSO functionality of this plugin.' . "\n";
 	}
 
 

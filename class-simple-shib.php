@@ -279,7 +279,6 @@ class Simple_Shib {
 			'simpleshib_setting-autoprovision',
 			array(
 				'default'           => false,
-				'description'       => 'Enable to automatically create local WordPress accounts as needed. Disable to restrict access to existing local WordPress accounts only.',
 				'sanitize_callback' => array( $this, 'sanitize_checkbox' ),
 				'show_in_rest'      => false,
 				'type'              => 'boolean',
@@ -300,7 +299,6 @@ class Simple_Shib {
 			'simpleshib_setting-debug',
 			array(
 				'default'           => false,
-				'description'       => 'Debug messages will be logged to the PHP error log.',
 				'sanitize_callback' => array( $this, 'sanitize_checkbox' ),
 				'show_in_rest'      => false,
 				'type'              => 'boolean',
@@ -321,7 +319,6 @@ class Simple_Shib {
 			'simpleshib_setting-enabled',
 			array(
 				'default'           => false,
-				'description'       => 'Enable plugin functionality.',
 				'sanitize_callback' => array( $this, 'sanitize_checkbox' ),
 				'show_in_rest'      => false,
 				'type'              => 'boolean',
@@ -342,7 +339,6 @@ class Simple_Shib {
 			'simpleshib_setting-sessiniturl',
 			array(
 				'default'           => '/Shibboleth.sso/Login',
-				'description'       => '',
 				'sanitize_callback' => 'sanitize_text_field', // This function is built in to WP.
 				'show_in_rest'      => false,
 				'type'              => 'string',
@@ -363,7 +359,6 @@ class Simple_Shib {
 			'simpleshib_setting-sesslogouturl',
 			array(
 				'default'           => '/Shibboleth.sso/Logout',
-				'description'       => '',
 				'sanitize_callback' => 'sanitize_text_field', // This function is built in to WP.
 				'show_in_rest'      => false,
 				'type'              => 'string',

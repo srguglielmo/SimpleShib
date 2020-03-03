@@ -60,7 +60,6 @@ class Simple_Shib {
 	 * WordPress. It should typically be "/Shibboleth.sso/Logout" to ensure the SP on
 	 * your server handles the request. There is an optional "return" parameter that
 	 * can be used to redirect to a custom/central logout page.
-	 * E.g.: '/Shibboleth.sso/Logout?return=https://idp.example.com/idp/profile/Logout'
 	 *
 	 * @since 1.0.0
 	 * @var string $session_logout_url
@@ -93,6 +92,11 @@ class Simple_Shib {
 	 * and tweaks a few things on the user profile page.
 	 *
 	 * @since 1.0.0
+	 *
+	 * @see get_option()
+	 * @see remove_all_filters()
+	 * @see add_filter()
+	 * @see add_action()
 	 */
 	public function __construct() {
 		// Fetch variables from the Settings API.
@@ -140,13 +144,12 @@ class Simple_Shib {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @see __construct()
 	 * @see wp_redirect()
 	 */
 	public function lost_password() {
 		// wp_safe_redirect() is not used here because $lost_pass_url is set
-		// above (not provided by the user) and is likely an external URL.
-		// Disable the phpcs sniff to avoid a warning.
+		// in the plugin configuration (not provided by the user) and is likely
+		// an external URL. The phpcs sniff is disabled to avoid a warning.
 		// phpcs:disable WordPress.Security.SafeRedirect.wp_redirect_wp_redirect
 		wp_redirect( $this->lost_pass_url );
 		// phpcs:enable
@@ -163,8 +166,6 @@ class Simple_Shib {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @see __construct()
-	 * {@see 'authenticate'}
 	 * @see is_user_logged_in()
 	 * @see is_shib_session_active()
 	 * @see login_to_wordpress()
@@ -174,6 +175,7 @@ class Simple_Shib {
 	 * @param WP_User $user WP_User if the user is authenticated. WP_Error or null otherwise.
 	 * @param string  $username Username or email address.
 	 * @param string  $password User password.
+	 *
 	 * @return WP_User Returns WP_User for successful authentication, otherwise WP_Error.
 	 */
 	public function authenticate_or_redirect( $user, $username, $password ) {
@@ -220,8 +222,7 @@ class Simple_Shib {
 
 		exit();
 
-		// The case of 'logged in at WP but not IdP' is handled in 'init' via
-		// validate_shib_session().
+		// The case of 'logged in at WP but not IdP' is handled in 'init' via validate_shib_session().
 	}
 
 
@@ -258,8 +259,8 @@ class Simple_Shib {
 	 *
 	 * @since 1.2.0
 	 *
-	 * @see register_setting()
 	 * @see add_settings_section()
+	 * @see register_setting()
 	 * @see add_settings_field()
 	 */
 	public function settings_init() {
@@ -391,6 +392,7 @@ class Simple_Shib {
 	 * @see get_current_blog_id()
 	 *
 	 * @param string $redirect_to Optional. URL parameter from client. Null.
+	 *
 	 * @return string Full URL for SSO initialization.
 	 */
 	private function get_initiator_url( $redirect_to = null ) {
@@ -495,8 +497,6 @@ class Simple_Shib {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @see __construct().
-	 * {@see 'login_form_logout'}
 	 * @see wp_logout().
 	 * @see wp_safe_redirect().
 	 */
@@ -518,8 +518,6 @@ class Simple_Shib {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @see __construct()
-	 * {@see 'init'}
 	 * @see is_user_logged_in()
 	 * @see is_shib_session_active()
 	 * @see wp_logout()
@@ -547,8 +545,6 @@ class Simple_Shib {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @see __construct()
-	 * {@see 'admin_init'}
 	 * @see add_action()
 	 * {@see 'show_user_profile'}
 	 * {@see 'admin_footer-profile.php'}
@@ -578,8 +574,6 @@ class Simple_Shib {
 	 *
 	 * @since 1.2.0
 	 *
-	 * @see __construct()
-	 * {@see 'admin_menu'}
 	 * @see add_options_page()
 	 */
 	public function admin_menu() {
@@ -598,7 +592,6 @@ class Simple_Shib {
 	 *
 	 * @since 1.2.0
 	 *
-	 * {@see 'admin_menu'}
 	 * @see settings_fields()
 	 * @see do_settings_sections()
 	 * @see submit_button()
@@ -631,6 +624,8 @@ class Simple_Shib {
 	 * @since 1.2.0
 	 *
 	 * @param mixed $input Value from submitted form.
+	 *
+	 * @return boolean True or false.
 	 */
 	public function sanitize_checkbox( $input ) {
 		return isset( $input ) ? true : false;
@@ -638,7 +633,7 @@ class Simple_Shib {
 
 
 	/**
-	 * Print the HTML of the settings field for automatic account provisioning.
+	 * Print the HTML of the settings field for enabled/disabled.
 	 *
 	 * @since 1.2.0
 	 *
@@ -665,7 +660,7 @@ class Simple_Shib {
 			return;
 		}
 
-		echo '<input name="simpleshib_setting-autoprovision" id="simpleshib_setting-autoprovision" type="checkbox" value="1" ' . checked( 1, get_option( 'simpleshib_setting-autoprovision' ), false ) . ' />&nbsp;Enable to automatically create local WordPress accounts as needed. Disable to restrict access to existing local WordPress accounts only.' . "\n";
+		echo '<input name="simpleshib_setting-autoprovision" id="simpleshib_setting-autoprovision" type="checkbox" value="1" ' . checked( 1, get_option( 'simpleshib_setting-autoprovision' ), false ) . ' />&nbsp;Enable to automatically create local WordPress accounts upon SSO login. Disable to restrict access to preexisting local WordPress accounts.' . "\n";
 	}
 
 
@@ -674,7 +669,7 @@ class Simple_Shib {
 	 *
 	 * @since 1.2.0
 	 *
-	 * @see 'settings_init'
+	 * @see settings_init()
 	 */
 	public function settings_field_debug_html() {
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -690,7 +685,7 @@ class Simple_Shib {
 	 *
 	 * @since 1.2.0
 	 *
-	 * @see 'settings_init'
+	 * @see settings_init()
 	 */
 	public function settings_field_sessiniturl_html() {
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -706,14 +701,14 @@ class Simple_Shib {
 	 *
 	 * @since 1.2.0
 	 *
-	 * @see 'settings_init'
+	 * @see settings_init()
 	 */
 	public function settings_field_sesslogouturl_html() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
 
-		echo '<input name="simpleshib_setting-sesslogouturl" id="simpleshib_setting-sesslogouturl" type="text" value="' . esc_html( get_option( 'simpleshib_setting-sesslogouturl' ) ) . '" />&nbsp;This typically should not be changed.' . "\n";
+		echo '<input name="simpleshib_setting-sesslogouturl" id="simpleshib_setting-sesslogouturl" type="text" value="' . esc_html( get_option( 'simpleshib_setting-sesslogouturl' ) ) . '" />&nbsp;This typically should not be changed, but an optional return URL can be provided. E.g. <code>/Shibboleth.sso/Logout?return=https://idp.example.com/idp/profile/Logout</code>' . "\n";
 	}
 
 
@@ -724,8 +719,6 @@ class Simple_Shib {
 	 * a password reset link pointing to the URL defined in the settings.
 	 *
 	 * @since 1.0.0
-	 *
-	 * @see add_admin_hooks()
 	 */
 	public function add_password_change_link() {
 		echo '<table class="form-table"><tr>' . "\n";
@@ -743,7 +736,6 @@ class Simple_Shib {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @see add_admin_hooks()
 	 * @see disable_profile_fields_post()
 	 */
 	public function disable_profile_fields() {
@@ -762,12 +754,11 @@ class Simple_Shib {
 	 * Disable profile fields POST data.
 	 *
 	 * This method disables the processing of POST data from the user profile form for
-	 * first name, last name, nickname, and email address.
-	 * This is necessary because a DOM editor can be used to re-enable the form fields manually.
+	 * first name, last name, nickname, and email address. This is necessary because a
+	 * DOM editor can be used to re-enable the form fields manually.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @see add_admin_hooks()
 	 * @see disable_profile_fields()
 	 */
 	public function disable_profile_fields_post() {

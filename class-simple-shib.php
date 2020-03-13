@@ -18,106 +18,40 @@
  * @since 1.0.0
  */
 class Simple_Shib {
-	/**
-	 * Automatic account provisioning. When enabled, anyone with valid credentials at
-	 * the IdP can login to WordPress. If they do not have a local WordPress account, one
-	 * will be created for them. When the setting is disabled, the login process will fail
-	 * if the user does not have a matching local WordPress account.
-	 *
-	 * @since 1.1.0
-	 * @var bool $auto_account_provision
-	 */
-	private $auto_account_provision;
 
 	/**
-	 * Debugging. If true, print debugging messages to the PHP error log.
-	 *
-	 * @since 1.0.0
-	 * @var bool $debug
-	 */
-	private $debug;
-
-	/**
-	 * Enable functionality of this plugin.
+	 * Plugin options.
 	 *
 	 * @since 1.2.0
-	 * @var bool $enabled
+	 * @var array $options
 	 */
-	private $enabled;
-
-	/**
-	 * Lost password URL. Password reset requests will point to this URL.
-	 *
-	 * @since 1.0.0
-	 * @var string $lost_pass_url
-	 */
-	private $lost_pass_url;
-
-	/**
-	 * Password change URL. The "change password" link in WordPress will point to this URL.
-	 * Set to an empty string to disable/hide the link entirely.
-	 *
-	 * @since 1.0.0
-	 * @var string $pass_change_url
-	 */
-	private $pass_change_url;
-
-	/**
-	 * Session initiator URL. The URL to initiate the session at the IdP. The user will be
-	 * redirected here upon login. This should typically be "/Shibboleth.sso/Login" to ensure
-	 * the SP on your server handles the request.
-	 *
-	 * @since 1.0.0
-	 * @var string $session_initiator_url
-	 */
-	private $session_initiator_url;
-
-	/**
-	 * Session logout URL. The user will be redirected here after being logged out of
-	 * WordPress. It should typically be "/Shibboleth.sso/Logout" to ensure the SP on
-	 * your server handles the request. There is an optional "return" parameter that
-	 * can be used to redirect to a custom/central logout page.
-	 *
-	 * @since 1.0.0
-	 * @var string $session_logout_url
-	 */
-	private $session_logout_url;
+	private $options = array();
 
 	/**
 	 * Construct method.
 	 *
-	 * The construct of this class adds the Shibboleth authentication handler
-	 * function to the WordPress authentication hook, hides the password fields,
-	 * and tweaks a few things on the user profile page.
+	 * The construct of this class initializes options, adds the Shibboleth
+	 * authentication handler to the WordPress authentication hook, and tweaks
+	 * a few things on the user profile page.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @see get_option()
 	 * @see remove_all_filters()
 	 * @see add_filter()
 	 * @see add_action()
 	 */
 	public function __construct() {
-		// Fetch variables from the Options API.
-		// get_site_option() is safe for both single- and multi-site.
-		$this->auto_account_provision = get_site_option( 'simpleshib_opt-autoprovision', false );
-		$this->debug                  = get_site_option( 'simpleshib_opt-debug', false );
-		$this->enabled                = get_site_option( 'simpleshib_opt-enabled', false );
-		$this->session_initiator_url  = get_site_option( 'simpleshib_opt-sessiniturl', '/Shibboleth.sso/Login' );
-		$this->session_logout_url     = get_site_option( 'simpleshib_opt-sesslogouturl', '/Shibboleth.sso/Logout' );
+		// Initialize plugin options.
+		$this->initialize_options();
 
-		// If SSO is not enabled, this plugin still does a few things (e.g. adding the settings menu),
-		// but don't add the actual authenticate and session validation filters/actions.
-		if ( true === $this->enabled ) {
+		// If SSO is _not_ enabled, this plugin still does a few things (e.g. adding the settings menu),
+		// but it doesn't add the actual authenticate and session validation filters/actions.
+		if ( true === $this->options['enabled'] ) {
 			// Replace all existing WordPress authentication methods with our Shib auth handling.
 			remove_all_filters( 'authenticate' );
 			add_filter( 'authenticate', array( $this, 'authenticate_or_redirect' ), 10, 3 );
 
 			// Check for IdP sessions that have disappeared.
-			// The init hooks fire when WP is finished loading on every page, but before
-			// headers are sent. We have to run validate_shib_session() in the init hook
-			// instead of in the plugin construct because is_user_logged_in() only works
-			// after WP is finished loading.
 			add_action( 'init', array( $this, 'validate_shib_session' ) );
 
 			// Bypass the logout confirmation and redirect to $session_logout_url defined above.
@@ -128,10 +62,10 @@ class Simple_Shib {
 		add_action( 'admin_init', array( $this, 'register_simpleshib_settings' ) );
 		if ( is_multisite() ) {
 			add_action( 'network_admin_menu', array( $this, 'add_settings_menu' ) );
+			add_action( 'network_admin_edit_{ACTION}', array( $this, 'handle_form_post' ) );
 		} else {
 			add_action( 'admin_menu', array( $this, 'add_settings_menu' ) );
 		}
-		add_action( 'init', array( $this, 'handle_settings_post' ) );
 
 		// Hide password fields on profile.php and user-edit.php, and do not alow resets.
 		add_action( 'admin_init', array( $this, 'admin_init' ) );
@@ -140,10 +74,44 @@ class Simple_Shib {
 		add_action( 'login_form_lostpassword', array( $this, 'lost_password' ) );
 	}
 
+
+	/**
+	 * Initialize plugin options.
+	 *
+	 * This method will fetch the options from the database. If options do not
+	 * exist, they will be added with appropriate default values. Note that
+	 * FOO_site_option() functions are safe for both single-site and multi-site.
+	 *
+	 * @see get_site_option()
+	 * @see add_site_option()
+	 * @since 1.2.0
+	 */
+	private function initialize_options() {
+		$options = get_site_option( 'simpleshib_options', false );
+
+		if ( false === $options ) {
+			// The options don't exist in the DB. Add them with default values.
+			$options = array(
+				'auto_provision'     => false,
+				'debug'              => false,
+				'enabled'            => false,
+				'pass_change_url'    => 'https://www.example.com/passchange',
+				'pass_lost_url'      => 'https://www.example.com/passreset',
+				'session_init_url'   => '/Shibboleth.sso/Login',
+				'session_logout_url' => '/Shibboleth.sso/Logout',
+			);
+
+			add_site_option( 'simpleshib_options', $options );
+		}
+
+		$this->options = $options;
+	}
+
+
 	/**
 	 * Process the form POST from the SimpleShib settings page.
 	 */
-	public function handle_settings_post() {
+	public function handle_post() {
 
 	}
 
@@ -172,7 +140,7 @@ class Simple_Shib {
 		// Logged in at IdP and WP. Redirect to /.
 		// TODO: Add a setting for a custom redirect path?
 		if ( true === is_user_logged_in() && true === $this->is_shib_session_active() ) {
-			if ( $this->debug ) {
+			if ( $this->options['debug'] ) {
 				// phpcs:disable WordPress.PHP.DevelopmentFunctions.error_log_error_log
 				error_log( 'Shibboleth Debug: Logged in at WP and IdP. Redirecting to /.' );
 				// phpcs:enable
@@ -184,7 +152,7 @@ class Simple_Shib {
 
 		// Logged in at IdP but not WP. Login to WP.
 		if ( false === is_user_logged_in() && true === $this->is_shib_session_active() ) {
-			if ( $this->debug ) {
+			if ( $this->options['debug'] ) {
 				// phpcs:disable WordPress.PHP.DevelopmentFunctions.error_log_error_log
 				error_log( 'Shibboleth Debug: Logged in at IdP but not WP.' );
 				// phpcs:enable
@@ -195,7 +163,7 @@ class Simple_Shib {
 		}
 
 		// Logged in nowhere. Redirect to IdP login page.
-		if ( $this->debug ) {
+		if ( $this->options['debug'] ) {
 			// phpcs:disable WordPress.PHP.DevelopmentFunctions.error_log_error_log
 			error_log( 'Shibboleth Debug: Logged in nowhere!' );
 			// phpcs:enable
@@ -225,7 +193,7 @@ class Simple_Shib {
 	 */
 	public function admin_init() {
 		// 'show_user_profile' fires after the "About Yourself" section when a user is editing their own profile.
-		if ( ! empty( $this->pass_change_url ) ) {
+		if ( ! empty( $this->options['pass_change_url'] ) ) {
 			add_action( 'show_user_profile', array( $this, 'add_password_change_link' ) );
 		}
 
@@ -322,7 +290,7 @@ class Simple_Shib {
 	 */
 	public function settings_field_cb_autoprovision() {
 		echo '<input type="checkbox" name="simpleshib_opt-autoprovision" id="simpleshib_opt-autoprovision"';
-		if ( true === $this->auto_account_provision ) {
+		if ( true === $this->options['auto_provision'] ) {
 			echo ' checked';
 		}
 		echo '>' . "\n";
@@ -338,7 +306,7 @@ class Simple_Shib {
 	 */
 	public function settings_field_cb_debug() {
 		echo '<input type="checkbox" name="simpleshib_opt-debug" id="simpleshib_opt-debug"';
-		if ( true === $this->debug ) {
+		if ( true === $this->options['debug'] ) {
 			echo ' checked';
 		}
 		echo '>' . "\n";
@@ -354,7 +322,7 @@ class Simple_Shib {
 	 */
 	public function settings_field_cb_enabled() {
 		echo '<input type="checkbox" name="simpleshib_opt-enabled" id="simpleshib_opt-enabled"';
-		if ( true === $this->enabled ) {
+		if ( true === $this->options['enabled'] ) {
 			echo ' checked';
 		}
 		echo '>' . "\n";
@@ -370,7 +338,7 @@ class Simple_Shib {
 	 */
 	public function settings_field_cb_sessiniturl() {
 		echo '<input type="text" name="simpleshib_opt-sessiniturl" id="simpleshib_opt-sessiniturl" required size="50"';
-		echo ' value="' . esc_attr( $this->session_initiator_url ) . '">';
+		echo ' value="' . esc_attr( $this->options['session_init_url'] ) . '">';
 		echo '<br>Session initiator URL. This generally should not be changed. Default <code>/Shibboleth.sso/Login</code>.' . "\n";
 	}
 
@@ -383,7 +351,7 @@ class Simple_Shib {
 	 */
 	public function settings_field_cb_sesslogouturl() {
 		echo '<input type="text" name="simpleshib_opt-sesslogouturl" id="simpleshib_opt-sesslogouturl" required size="50"';
-		echo ' value="' . esc_attr( $this->session_logout_url ) . '">';
+		echo ' value="' . esc_attr( $this->options['session_logout_url'] ) . '">';
 		echo '<br>Session logout URL. This generally should not be changed, but an optional return URL can be provided. E.g. <code>/Shibboleth.sso/Logout?return=https://idp.example.com/idp/profile/Logout</code>.' . "\n";
 	}
 
@@ -503,7 +471,7 @@ class Simple_Shib {
 	 */
 	public function validate_shib_session() {
 		if ( true === is_user_logged_in() && false === $this->is_shib_session_active() ) {
-			if ( $this->debug ) {
+			if ( $this->options['debug'] ) {
 				// phpcs:disable WordPress.PHP.DevelopmentFunctions.error_log_error_log
 				error_log( 'Shibboleth Debug: validate_shib_session(): Logged in at WP but not IdP. Logging out!' );
 				// phpcs:enable
@@ -541,7 +509,7 @@ class Simple_Shib {
 			$return_to = add_query_arg( 'redirect_to', $redirect_to, $return_to );
 		}
 
-		$initiator_url = $this->session_initiator_url . '?target=' . rawurlencode( $return_to );
+		$initiator_url = $this->options['session_init_url'] . '?target=' . rawurlencode( $return_to );
 
 		return $initiator_url;
 	}
@@ -574,7 +542,7 @@ class Simple_Shib {
 
 		// Check to see if they exist locally.
 		$user_obj = get_user_by( 'login', $shib['username'] );
-		if ( false === $user_obj && false === $this->auto_account_provision ) {
+		if ( false === $user_obj && false === $this->options['auto_provision'] ) {
 			do_action( 'wp_login_failed', $shib['username'] ); // Fire any login-failed hooks.
 			$error_obj = new WP_Error(
 				'shib',
@@ -640,7 +608,7 @@ class Simple_Shib {
 	public function shib_logout() {
 		// TODO: Is this still needed to bypass the logout prompt?
 		wp_logout();
-		wp_safe_redirect( $this->session_logout_url );
+		wp_safe_redirect( $this->options['session_logout_url'] );
 		exit();
 	}
 
@@ -660,7 +628,7 @@ class Simple_Shib {
 		// in the plugin configuration (not provided by the user) and is likely
 		// an external URL. The phpcs sniff is disabled to avoid a warning.
 		// phpcs:disable WordPress.Security.SafeRedirect.wp_redirect_wp_redirect
-		wp_redirect( $this->lost_pass_url );
+		wp_redirect( $this->options['pass_lost_url'] );
 		// phpcs:enable
 		exit();
 	}
@@ -803,7 +771,7 @@ class Simple_Shib {
 	public function add_password_change_link() {
 		echo '<table class="form-table"><tr>' . "\n";
 		echo '<th>Change Password</th>' . "\n";
-		echo '<td><a href="' . esc_url( $this->pass_change_url ) . '">Change your password</a></td>' . "\n";
+		echo '<td><a href="' . esc_url( $this->options['pass_change_url'] ) . '">Change your password</a></td>' . "\n";
 		echo '</tr></table>' . "\n";
 	}
 

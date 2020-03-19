@@ -37,7 +37,7 @@ This plugin will not work if you do not have a Shibboleth IdP and SP already con
 	RewriteRule . - [END]`
 
 3. Activate the SimpleShib plugin in WordPress.
-4. Browse to Settings->SimpleShib and edit the configuration. Remember to enable SSO functionality by checking the "Authentication Hooks" option.
+4. Browse to Settings->SimpleShib and edit the configuration.
 
 == Frequently Asked Questions ==
 
@@ -75,13 +75,11 @@ See the `LICENSE` file for full details.
 
 == Changelog ==
 
-= 1.2.1 =
-* Correct syntax error.
-
 = 1.2.0 =
+* Move configuration into the database.
 * Compatibility with WordPress 5.3.
-* Move configuration into the WordPress Settings API.
-* Minor documentation updates.
+* Fixed a return_to URL bug that affected multisite.
+* Documentation updates.
 
 = 1.1.1 =
 * Compatibility with WordPress 5.2.

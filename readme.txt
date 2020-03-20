@@ -17,6 +17,8 @@ User data (login, name, and email) is updated in WordPress from the IdP data upo
 
 On multisite instances of WordPress, **SimpleShib** can only be network-activated.
 
+The plugin settings include options for autoprovisioning, IdP attributes, password reset/change URLs, and session initiation/logout URLs.
+
 **SimpleShib** is developed on GitHub. Please submit bug reports and contributions on [the GitHub project page](https://github.com/srguglielmo/SimpleShib). For general support and questions, please use the [WordPress support forum](https://wordpress.org/support/plugin/simpleshib/).
 
 This plugin is not affiliated with the Shibboleth or Internet2 organizations.
@@ -75,15 +77,19 @@ See the `LICENSE` file for full details.
 
 == Changelog ==
 
+= 1.2.1 =
+* Add options for custom IdP attributes.
+* Documentation updates.
+
 = 1.2.0 =
 * Move configuration into the database.
 * Compatibility with WordPress 5.3.
-* Fixed a return_to URL bug that affected multisite.
+* Fix a return_to URL bug that affected multisite.
 * Documentation updates.
 
 = 1.1.1 =
 * Compatibility with WordPress 5.2.
-* Improved compliance with WordPress coding standards.
+* Improve compliance with WordPress coding standards.
 * Minor documentation updates.
 
 = 1.1.0 =
@@ -92,19 +98,19 @@ See the `LICENSE` file for full details.
 
 = 1.0.3 =
 * Compatibility with WordPress 5.1.
-* Improved compliance with WordPress coding standards.
+* Improve compliance with WordPress coding standards.
 * Use wp_safe_redirect() when possible.
 * Move PHP class into a separate file.
 * Change install instructions from a must-use plugin to a network-activated plugin.
 
 = 1.0.2 =
 * Compatibility with WordPress 5.
-* Improved compliance with WordPress coding standards.
+* Improve compliance with WordPress coding standards.
 * Minor documentation updates.
 
 = 1.0.1 =
-* Very minor documentation and code changes.
-* Added plugin banner to assets.
+* Minor documentation and code changes.
+* Add plugin banner to assets.
 
 = 1.0.0 =
 * Initial release.

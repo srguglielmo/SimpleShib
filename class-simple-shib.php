@@ -34,6 +34,10 @@ class Simple_Shib {
 	 * @var const array DEFAULT_OPTS
 	 */
 	private const DEFAULT_OPTS = array(
+		'attr_email'         => 'mail',
+		'attr_firstname'     => 'givenName',
+		'attr_lastname'      => 'sn',
+		'attr_username'      => 'uid',
 		'autoprovision'      => false,
 		'debug'              => false,
 		'enabled'            => false,
@@ -133,6 +137,16 @@ class Simple_Shib {
 		$clean_opts = array();
 		foreach ( $given_opts as $key => $value ) {
 			switch ( $key ) {
+				// Strings (non-URL).
+				case 'attr_email':
+				case 'attr_firstname':
+				case 'attr_lastname':
+				case 'attr_username':
+					if ( ctype_alnum( trim( $value ) ) ) {
+						$clean_opts[ $key ] = (string) $value;
+					}
+					continue 2;
+
 				// Booleans.
 				case 'autoprovision':
 				case 'debug':
@@ -304,6 +318,34 @@ class Simple_Shib {
 			</label></td>
 		</tr>
 		<tr>
+			<th scope="row">Email Attribute</th>
+			<td><label for="simpleshib_options-attr_email">
+			<input type="text" size="40" required name="simpleshib_options-attr_email" id="simpleshib_options-attr_email" value="<?php echo esc_attr( $this->options['attr_email'] ); ?>" />
+			The SAML attribute released by the IdP containing the person's email address. Defaults to <code>mail</code>.
+			</label></td>
+		</tr>
+		<tr>
+			<th scope="row">First Name Attribute</th>
+			<td><label for="simpleshib_options-attr_firstname">
+			<input type="text" size="40" required name="simpleshib_options-attr_firstname" id="simpleshib_options-attr_firstname" value="<?php echo esc_attr( $this->options['attr_firstname'] ); ?>" />
+			The SAML attribute released by the IdP containing the person's (preferred) first name. Defaults to <code>givenName</code>.
+			</label></td>
+		</tr>
+		<tr>
+			<th scope="row">Last Name Attribute</th>
+			<td><label for="simpleshib_options-attr_lastname">
+			<input type="text" size="40" required name="simpleshib_options-attr_lastname" id="simpleshib_options-attr_lastname" value="<?php echo esc_attr( $this->options['attr_lastname'] ); ?>" />
+			The SAML attribute released by the IdP containing the person's (preferred) last name. Defaults to <code>sn</code>.
+			</label></td>
+		</tr>
+		<tr>
+			<th scope="row">Username Attribute</th>
+			<td><label for="simpleshib_options-attr_username">
+			<input type="text" size="40" required name="simpleshib_options-attr_username" id="simpleshib_options-attr_username" value="<?php echo esc_attr( $this->options['attr_username'] ); ?>" />
+			The SAML attribute released by the IdP containing the person's local WordPress username. Defaults to <code>uid</code>.
+			</label></td>
+		</tr>
+		<tr>
 			<th scope="row">Autoprovision Accounts</th>
 			<td><label for="simpleshib_options-autoprovision">
 			<input type="checkbox" name="simpleshib_options-autoprovision" id="simpleshib_options-autoprovision" value="1"<?php echo ( true === $this->options['autoprovision'] ? ' checked' : '' ); ?> />
@@ -423,16 +465,16 @@ class Simple_Shib {
 	 * to spoof the "mail" header, it shows up as HTTP_MAIL instead of "mail".
 	 *
 	 * @since 1.0.0
-	 *
+	 * @since 1.2.1 Added support for custom attributes.
 	 * @return bool True if the IdP session is active, otherwise false.
 	 */
 	private function is_shib_session_active() {
 		if ( isset( $_SERVER['AUTH_TYPE'] ) && 'shibboleth' === $_SERVER['AUTH_TYPE']
 			&& ! empty( $_SERVER['Shib-Session-ID'] )
-			&& ! empty( $_SERVER['uid'] )
-			&& ! empty( $_SERVER['givenName'] )
-			&& ! empty( $_SERVER['sn'] )
-			&& ! empty( $_SERVER['mail'] )
+			&& ! empty( $_SERVER[ $this->options['attr_email'] ] )
+			&& ! empty( $_SERVER[ $this->options['attr_firstname'] ] )
+			&& ! empty( $_SERVER[ $this->options['attr_lastname'] ] )
+			&& ! empty( $_SERVER[ $this->options['attr_username'] ] )
 		) {
 			return true;
 		} else {
@@ -516,10 +558,10 @@ class Simple_Shib {
 		// The headers have been confirmed to be !empty() in is_shib_session_active() above.
 		// The data is coming from the IdP, not the user, so it is trustworthy.
 		// phpcs:disable WordPress.Security.ValidatedSanitizedInput.InputNotValidated,WordPress.Security.ValidatedSanitizedInput.MissingUnslash,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		$shib['username']  = $_SERVER['uid'];
-		$shib['firstName'] = $_SERVER['givenName'];
-		$shib['lastName']  = $_SERVER['sn'];
-		$shib['email']     = $_SERVER['mail'];
+		$shib['email']     = $_SERVER[ $this->options['attr_email'] ];
+		$shib['firstName'] = $_SERVER[ $this->options['attr_firstname'] ];
+		$shib['lastName']  = $_SERVER[ $this->options['attr_lastname'] ];
+		$shib['username']  = $_SERVER[ $this->options['attr_username'] ];
 		// phpcs:enable
 
 		// Check to see if they exist locally.

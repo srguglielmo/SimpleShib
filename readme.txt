@@ -1,8 +1,9 @@
 === SimpleShib ===
 Contributors: srg-1
 Tags: shibboleth, authentication, sso, login
-Requires at least: 4.6
-Tested up to: 5.3
+Requires at least: 5.2
+Tested up to: 5.4
+Requires PHP: 7.2
 License: MIT
 
 SimpleShib is a WordPress plugin to authenticate users with a Shibboleth Single Sign-On infrastructure.

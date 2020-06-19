@@ -320,28 +320,28 @@ class Simple_Shib {
 		<tr>
 			<th scope="row">Email Attribute</th>
 			<td><label for="simpleshib_options-attr_email">
-			<input type="text" size="40" required name="simpleshib_options-attr_email" id="simpleshib_options-attr_email" value="<?php echo esc_attr( $this->options['attr_email'] ); ?>" />
+			<input type="text" size="40" required name="simpleshib_options-attr_email" id="simpleshib_options-attr_email" value="<?php echo esc_attr( $this->options['attr_email'] ); ?>" /><br>
 			The SAML attribute released by the IdP containing the person's email address. Defaults to <code>mail</code>.
 			</label></td>
 		</tr>
 		<tr>
 			<th scope="row">First Name Attribute</th>
 			<td><label for="simpleshib_options-attr_firstname">
-			<input type="text" size="40" required name="simpleshib_options-attr_firstname" id="simpleshib_options-attr_firstname" value="<?php echo esc_attr( $this->options['attr_firstname'] ); ?>" />
+			<input type="text" size="40" required name="simpleshib_options-attr_firstname" id="simpleshib_options-attr_firstname" value="<?php echo esc_attr( $this->options['attr_firstname'] ); ?>" /><br>
 			The SAML attribute released by the IdP containing the person's (preferred) first name. Defaults to <code>givenName</code>.
 			</label></td>
 		</tr>
 		<tr>
 			<th scope="row">Last Name Attribute</th>
 			<td><label for="simpleshib_options-attr_lastname">
-			<input type="text" size="40" required name="simpleshib_options-attr_lastname" id="simpleshib_options-attr_lastname" value="<?php echo esc_attr( $this->options['attr_lastname'] ); ?>" />
+			<input type="text" size="40" required name="simpleshib_options-attr_lastname" id="simpleshib_options-attr_lastname" value="<?php echo esc_attr( $this->options['attr_lastname'] ); ?>" /><br>
 			The SAML attribute released by the IdP containing the person's (preferred) last name. Defaults to <code>sn</code>.
 			</label></td>
 		</tr>
 		<tr>
 			<th scope="row">Username Attribute</th>
 			<td><label for="simpleshib_options-attr_username">
-			<input type="text" size="40" required name="simpleshib_options-attr_username" id="simpleshib_options-attr_username" value="<?php echo esc_attr( $this->options['attr_username'] ); ?>" />
+			<input type="text" size="40" required name="simpleshib_options-attr_username" id="simpleshib_options-attr_username" value="<?php echo esc_attr( $this->options['attr_username'] ); ?>" /><br>
 			The SAML attribute released by the IdP containing the person's local WordPress username. Defaults to <code>uid</code>.
 			</label></td>
 		</tr>
@@ -349,7 +349,7 @@ class Simple_Shib {
 			<th scope="row">Autoprovision Accounts</th>
 			<td><label for="simpleshib_options-autoprovision">
 			<input type="checkbox" name="simpleshib_options-autoprovision" id="simpleshib_options-autoprovision" value="1"<?php echo ( true === $this->options['autoprovision'] ? ' checked' : '' ); ?> />
-			If enabled, local accounts will be <em>automatically</em> created (as needed) after authenticating at the IdP. If disabled, only users with preexisting local accounts can login.
+			If enabled, local accounts will <em>automatically</em> be created (as needed) after authenticating at the IdP. If disabled, only users with pre-existing local accounts can login.
 			</label></td>
 		</tr>
 		<tr>

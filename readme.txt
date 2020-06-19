@@ -17,7 +17,7 @@ User data (login, name, and email) is updated in WordPress from the IdP data upo
 
 On multisite instances of WordPress, **SimpleShib** can only be network-activated.
 
-The plugin settings include options for autoprovisioning, IdP attributes, password reset/change URLs, and session initiation/logout URLs.
+The plugin settings include options for autoprovisioning, custom IdP attributes, password reset/change URLs, and session initiation/logout URLs.
 
 **SimpleShib** is developed on GitHub. Please submit bug reports and contributions on [the GitHub project page](https://github.com/srguglielmo/SimpleShib). For general support and questions, please use the [WordPress support forum](https://wordpress.org/support/plugin/simpleshib/).
 

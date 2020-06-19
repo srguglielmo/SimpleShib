@@ -75,6 +75,11 @@ There is no warranty and the author or any contributors are not liable if someth
 
 See the `LICENSE` file for full details.
 
+== Screenshots ==
+
+1. The first half of the SimpleShib plugin settings within the WordPress admin menu.
+2. The second half of the SimpleShib plugin settings within the WordPress admin menu.
+
 == Changelog ==
 
 = 1.2.1 =

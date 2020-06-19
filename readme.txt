@@ -83,6 +83,11 @@ See the `LICENSE` file for full details.
 
 == Changelog ==
 
+= 1.2.2 =
+* Compatibility with WordPress 5.4.
+* Require PHP 7.2.
+* Documentation updates.
+
 = 1.2.1 =
 * Add options for custom IdP attributes.
 * Documentation updates.

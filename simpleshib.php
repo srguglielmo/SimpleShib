@@ -3,7 +3,7 @@
  * Plugin Name: SimpleShib
  * Plugin URI: https://wordpress.org/plugins/simpleshib/
  * Description: User authentication via Shibboleth Single Sign-On.
- * Version: 1.2.1
+ * Version: 1.2.2
  * Requires at least: 5.2
  * Requires PHP: 7.2
  * Author: Steve Guglielmo
